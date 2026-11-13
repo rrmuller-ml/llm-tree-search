@@ -1,16 +1,29 @@
 import unittest
 
 from llm import (
+    COMPLETION_HEADER,
+    EXAMPLE_TRACE,
     SYSTEM_PROMPT,
     DecodeError,
     apply_chain,
+    completion_prefix,
+    continue_prompt,
+    decode_continuation,
     decode_chain,
     depth_first,
     encode_chain,
     encode_context,
+    encode_trace,
     expand,
+    expand_completion,
+    expand_continue,
+    expand_prefill,
+    prefill_parts,
     pick_next,
     search,
+    validate_chain,
+    valid_prefix,
+    PartialChain,
 )
 from tree import Node
 
@@ -242,6 +255,218 @@ class TestLoop(unittest.TestCase):
         result = search(root, FakeLLM(reply, reply, reply), max_calls=2)
         self.assertEqual(result.calls, 2)
         self.assertIsNone(result.answer)
+
+
+class TestContinueMode(unittest.TestCase):
+    def tree(self) -> Node:
+        root = Node.new_root(Q)
+        apply_chain(root, Q, decode_chain(CHAIN))
+        return root
+
+    def test_prompt_has_instruction_and_cut_trace(self):
+        root = self.tree()
+        prompt, opener = continue_prompt(root.first, "Double and halve: 6*30")
+        self.assertTrue(prompt.endswith("<node>\n  <parent>1</parent>\n"))
+        self.assertIn("Continue it", prompt)
+        self.assertNotIn("12*10 = 120", prompt)
+        self.assertNotIn("14 * 25", prompt)  # no few-shot header; the system prompt has the example
+
+    def test_reply_continuing_inside_open_node(self):
+        chain = decode_continuation("  <thought>6*30 = 180</thought>\n</node>", "<node>\n  <parent>1</parent>\n")
+        self.assertEqual(chain[0].thought, "6*30 = 180")
+
+    def test_reply_rewriting_open_node(self):
+        opener = "<node>\n  <parent>1</parent>\n"
+        ok = decode_continuation("<node><parent>1</parent><thought>t</thought></node>", opener)
+        self.assertEqual(ok[0].thought, "t")
+        no_parent = decode_continuation("<node><thought>t</thought></node>", opener)
+        self.assertEqual(no_parent[0].thought, "t")
+        with self.assertRaises(DecodeError):
+            decode_continuation("<node><parent>0</parent><thought>t</thought></node>", opener)
+
+    def test_expand_continue(self):
+        root = self.tree()
+        llm = FakeLLM("<thought>6*30 = 180</thought></node>")
+        created = expand_continue(root.first, "Double and halve: 6*30", llm)
+        self.assertEqual(created[0].title, "Double and halve: 6*30")
+        self.assertTrue(created[0].is_answer)
+        self.assertEqual(llm.calls[0][0], SYSTEM_PROMPT)
+
+    def test_search_continue_mode(self):
+        first = ("<thought>Split.</thought><proposal>Try A</proposal><proposal>Try B</proposal></node>"
+                 "<node><parent>0</parent><thought>A looks hard.</thought><proposal>Push on A</proposal></node>")
+        second = "<thought>Pushing on A: 180</thought></node>"
+        llm = FakeLLM(first, second)
+        result = search(Node.new_root(Q), llm, max_calls=5, mode="continue")
+        self.assertEqual(result.answer.title, "Push on A")
+        self.assertTrue(llm.calls[1][1].endswith("<node>\n  <parent>0</parent>\n"))
+
+
+class TestPrefillMode(unittest.TestCase):
+    def tree(self) -> Node:
+        root = Node.new_root(Q)
+        apply_chain(root, Q, decode_chain(CHAIN))
+        return root
+
+    def test_parts(self):
+        root = self.tree()
+        user, prefill, opener = prefill_parts(root.first, "Double and halve: 6*30")
+        self.assertIn(f"<question>{Q}</question>", user)
+        self.assertTrue(prefill.startswith("<trace>\n<node>\n"))
+        self.assertTrue(prefill.endswith("<node>\n  <parent>1</parent>\n"))
+        self.assertNotIn("12*10 = 120", prefill)
+        self.assertEqual(opener, "<node>\n  <parent>1</parent>\n")
+
+    def test_parts_for_question(self):
+        user, prefill, opener = prefill_parts(Node.new_root(Q), Q)
+        self.assertEqual(prefill, "<trace>\n<node>\n")
+
+    def test_expand_and_search(self):
+        calls = []
+
+        def model(system, user, prefill):
+            calls.append(prefill)
+            if len(calls) == 1:
+                return ("  <thought>Split.</thought>\n  <proposal>Try A</proposal>\n  <proposal>Try B</proposal>\n"
+                        "</node>\n<node>\n  <parent>0</parent>\n  <thought>A looks hard.</thought>\n"
+                        "  <proposal>Push on A</proposal>\n</node>\n")
+            return "  <thought>Pushing on A: 180</thought>\n</node>\n</trace>"
+
+        result = search(Node.new_root(Q), prefill=model, max_calls=5)
+        self.assertEqual(result.answer.title, "Push on A")
+        self.assertTrue(calls[1].endswith("<node>\n  <parent>0</parent>\n"))
+
+    def test_search_rejects_two_models(self):
+        with self.assertRaises(ValueError):
+            search(Node.new_root(Q), FakeLLM(), prefill=lambda s, u, p: "")
+
+
+class TestRepairAndSalvage(unittest.TestCase):
+    def test_single_proposal_forces_parent(self):
+        chain = decode_chain(
+            "<node><thought>t</thought><proposal>only</proposal></node>"
+            "<node><parent>1</parent><thought>u</thought></node>"
+        )
+        good, err = valid_prefix(chain)
+        self.assertIsNone(err)
+        self.assertEqual(good[1].parent, 0)
+        self.assertEqual(chain[1].parent, 1)  # input not mutated
+
+    def test_keeps_valid_start(self):
+        chain = decode_chain(
+            "<node><thought>t</thought><proposal>a</proposal><proposal>b</proposal></node>"
+            "<node><parent>1</parent><thought>u</thought><proposal>x</proposal><proposal>y</proposal></node>"
+            "<node><parent>5</parent><thought>bad</thought></node>"
+        )
+        good, err = valid_prefix(chain)
+        self.assertEqual(len(good), 2)
+        self.assertIn("node 2", err)
+
+    def test_nothing_valid(self):
+        good, err = valid_prefix([])
+        self.assertEqual(good, [])
+        self.assertTrue(err)
+
+    def test_partial_reply_is_applied_and_reported(self):
+        reply = ("  <thought>Split.</thought>\n  <proposal>A</proposal>\n  <proposal>B</proposal>\n</node>\n"
+                 "<node>\n  <parent>0</parent>\n  <thought>via A</thought>\n  <proposal>A1</proposal>\n"
+                 "  <proposal>A2</proposal>\n</node>\n<node>\n  <parent>7</parent>\n  <thought>bad</thought>\n</node>")
+        root = Node.new_root(Q)
+        with self.assertRaises(PartialChain) as ctx:
+            expand_prefill(root, Q, lambda s, u, p: reply)
+        self.assertEqual(len(ctx.exception.created), 2)
+        self.assertEqual(root.first.get_proposal("A").node.thought, "via A")
+
+    def test_search_continues_after_partial(self):
+        first = ("  <thought>Split.</thought>\n  <proposal>A</proposal>\n  <proposal>B</proposal>\n</node>\n"
+                 "<node>\n  <parent>9</parent>\n  <thought>bad</thought>\n</node>")
+        second = "  <thought>A gives 180</thought>\n</node>"
+        replies = [first, second]
+        result = search(Node.new_root(Q), prefill=lambda s, u, p: replies.pop(0), max_calls=5)
+        self.assertEqual(result.answer.title, "A")
+        self.assertEqual(result.calls, 2)
+        self.assertEqual(len(result.errors), 1)
+
+
+class TestExample(unittest.TestCase):
+    def test_example_is_a_valid_chain(self):
+        chain = decode_chain(EXAMPLE_TRACE)
+        validate_chain(chain)
+        self.assertEqual(len(chain), 3)
+        self.assertTrue(chain[-1].is_answer)
+        self.assertIn(EXAMPLE_TRACE, SYSTEM_PROMPT)
+        self.assertIn(EXAMPLE_TRACE, COMPLETION_HEADER)
+
+
+class FakeCompleter:
+    def __init__(self, *replies: str):
+        self.replies = list(replies)
+        self.prefixes: list[str] = []
+
+    def __call__(self, prefix: str) -> str:
+        self.prefixes.append(prefix)
+        return self.replies.pop(0)
+
+
+class TestCompletion(unittest.TestCase):
+    def tree(self) -> Node:
+        root = Node.new_root(Q)
+        apply_chain(root, Q, decode_chain(CHAIN))
+        return root
+
+    def test_encode_trace_roundtrips_path(self):
+        root = self.tree()
+        leaf = root.answer_nodes()[0]
+        self.assertEqual(decode_chain(encode_trace(leaf)), decode_chain(CHAIN))
+
+    def test_prefix_for_question(self):
+        root = Node.new_root(Q)
+        prefix, opener = completion_prefix(root, Q)
+        self.assertTrue(prefix.startswith(COMPLETION_HEADER))
+        self.assertTrue(prefix.endswith(f"<question>{Q}</question>\n<trace>\n<node>\n"))
+        self.assertEqual(opener, "<node>\n")
+
+    def test_prefix_cuts_after_owner_and_picks_proposal(self):
+        root = self.tree()
+        first = root.first
+        prefix, opener = completion_prefix(first, "Double and halve: 6*30")
+        self.assertEqual(opener, "<node>\n  <parent>1</parent>\n")
+        trace = prefix.split("<trace>\n")[-1]
+        self.assertIn("Distribute over 15", trace)        # sibling proposal still listed
+        self.assertNotIn("12*10 = 120", trace)            # explored continuation removed
+        self.assertTrue(trace.endswith(opener))
+
+    def test_expand_completion(self):
+        root = self.tree()
+        complete = FakeCompleter("  <thought>6*30 = 180</thought>\n</node>\n</trace>\n<question>junk")
+        created = expand_completion(root.first, "Double and halve: 6*30", complete)
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0].title, "Double and halve: 6*30")
+        self.assertTrue(created[0].is_answer)
+
+    def test_expand_completion_multi_node(self):
+        root = Node.new_root(Q)
+        reply = ("  <thought>Split.</thought>\n  <proposal idx=\"0\">A</proposal>\n  <proposal idx=\"1\">B</proposal>\n"
+                 "</node>\n<node>\n  <parent>1</parent>\n  <thought>via B: 180</thought>\n</node>\n")
+        expand_completion(root, Q, FakeCompleter(reply))
+        self.assertEqual(root.first.get_proposal("B").node.thought, "via B: 180")
+        self.assertFalse(root.first.get_proposal("A").is_explored)
+
+    def test_search_with_completion(self):
+        first = ("  <thought>Split.</thought>\n  <proposal>Try A</proposal>\n  <proposal>Try B</proposal>\n"
+                 "</node>\n<node>\n  <parent>0</parent>\n  <thought>A looks hard.</thought>\n"
+                 "  <proposal>Push on A</proposal>\n</node>\n")
+        second = "  <thought>Pushing on A: 180</thought>\n</node>\n</trace>"
+        complete = FakeCompleter(first, second)
+        result = search(Node.new_root(Q), complete=complete, max_calls=5)
+        self.assertEqual(result.answer.title, "Push on A")
+        self.assertTrue(complete.prefixes[1].endswith("<node>\n  <parent>0</parent>\n"))
+
+    def test_search_needs_exactly_one_model(self):
+        with self.assertRaises(ValueError):
+            search(Node.new_root(Q))
+        with self.assertRaises(ValueError):
+            search(Node.new_root(Q), FakeLLM(), complete=FakeCompleter())
 
 
 if __name__ == "__main__":

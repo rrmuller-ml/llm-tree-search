@@ -16,7 +16,46 @@ probability `prob` (e.g. from the LLM's log-probs); the tree stores them but
 does not require them.
 
 [`llm.py`](llm.py) connects an LLM to the tree through a small XML format
-([below](#llm-in-the-loop)); any provider works.
+([below](#llm-in-the-loop)), and **it now runs against real models**: open
+models on Thinking Machines' [Tinker](https://tinker-docs.thinkingmachines.ai/)
+grow the tree, and the result opens in the viewer.
+
+## Quick start: search with a real LLM
+
+```bash
+uv sync
+```
+
+```bash
+uv run tinker auth login
+```
+
+```bash
+uv run python run_search.py "What is 12 * 15?" --out runs/12x15.yaml --max-calls 3
+```
+
+This runs `Qwen/Qwen3.6-35B-A3B` on Tinker with thinking off and assistant
+prefill ([details](#qwen36-35b-a3b-with-assistant-prefill)), prints the tree
+and saves it as YAML. To view it, serve the repo and open the file in the UI:
+
+```bash
+python3 -m http.server 8000
+```
+
+<http://localhost:8000/ui/?file=../runs/12x15.yaml>
+
+[`runs/12x15.yaml`](runs/12x15.yaml) is a saved run: one call, three nodes,
+answer 180, with two proposals left unexplored.
+
+`run_search.py` options: `--max-calls N`, `--model NAME`, and `--mode`:
+
+| `--mode` | Model | How a proposal is developed |
+| --- | --- | --- |
+| `prefill` (default) | `Qwen/Qwen3.6-35B-A3B` | Assistant reply pre-started with the cut trace |
+| `inkling` | `thinkingmachines/Inkling-Small` | Cut trace in the user message ([continue mode](#inkling-small-continue-mode)) |
+| `gpt-oss` | `openai/gpt-oss-120b` | Path + `<develop>` in the user message |
+
+Each call costs Tinker credits; `--max-calls` caps them.
 
 ## Files
 
@@ -24,9 +63,13 @@ does not require them.
 | --- | --- |
 | [`tree.py`](tree.py) | `Node` and `Proposal` classes |
 | [`llm.py`](llm.py) | XML codec for LLM output, plus `expand` and `search` |
-| [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py) | Unit tests (`unittest`) |
+| [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (Qwen), `TinkerLLM` (gpt-oss, Inkling), `TinkerCompleter` (base models) |
+| [`run_search.py`](run_search.py) | Command line: run a search on Tinker and save the tree |
+| [`runs/`](runs/) | Saved search trees |
+| [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py), [`test_tinker_llm.py`](test_tinker_llm.py) | Unit tests (`unittest`), with fake models |
 | [`example.yaml`](example.yaml) | Example tree in `Node.to_dict()` format |
 | [`ui/`](ui/) | HTML viewer for trees ([README](ui/README.md)) |
+| [`pyproject.toml`](pyproject.toml), [`uv.lock`](uv.lock) | Dependencies (`uv`) |
 
 ## Data model
 
@@ -124,13 +167,19 @@ to them later.
 
 ```xml
 <node>
-  <thought>Split into easier parts.</thought>
-  <proposal idx="0">Distribute over 15: 12*10 + 12*5</proposal>
-  <proposal idx="1">Double and halve: 6*30</proposal>
+  <thought>14 * 25 is easier to compute in parts.</thought>
+  <proposal idx="0">Distribute over 25: 10*25 + 4*25</proposal>
+  <proposal idx="1">Use 4*25 = 100: 14*25 = 3.5*100</proposal>
 </node>
 <node>
   <parent>0</parent>
-  <thought>12*10 = 120 and 12*5 = 60, so 12*15 = 180.</thought>
+  <thought>10*25 = 250 and 4*25 = 100.</thought>
+  <proposal idx="0">Add the parts: 250 + 100</proposal>
+  <proposal idx="1">Check another way: 7*50</proposal>
+</node>
+<node>
+  <parent>0</parent>
+  <thought>250 + 100 = 350, so 14 * 25 = 350.</thought>
 </node>
 ```
 
@@ -144,7 +193,12 @@ Rules:
 - A reply may stop on a node with open proposals; the search resumes from there.
 - Text outside `<node>` tags and unknown attributes are ignored. A reply cut
   off mid-node keeps every complete node and drops the unfinished one.
-- A reply that breaks a rule raises `DecodeError` and leaves the tree unchanged.
+- After a node with exactly one proposal there is nothing to choose, so the
+  next node's `<parent>` is set to it whatever number the model wrote.
+- If a reply breaks a rule partway, its valid start is kept and added to the
+  tree, and the error is recorded in `result.errors` (`PartialChain`). A reply
+  with no valid node raises `DecodeError` and leaves the tree unchanged.
+  `apply_chain` on its own stays strict.
 
 The LLM writes no scores. `Proposal.prob` is meant to come from the log-prob
 of the LLM writing a given `<parent>` after a node, and `Proposal.value` from
@@ -199,10 +253,133 @@ decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
 | `pick_next(root, score)` / `depth_first` | Choose the next proposal |
 | `search(root, llm, max_calls, score)` | The full loop |
 
+### Completion (autocomplete) mode
+
+Instead of a chat call, a completion model can continue a text document. The
+document is a short header with one solved example, the question, and the
+trace so far, cut right after the node that owns the proposal to explore, with
+an open node whose `<parent>` picks that proposal:
+
+```xml
+<question>What is 12 * 15?</question>
+<trace>
+<node>
+  <thought>Split into easier parts.</thought>
+  <proposal idx="0">Distribute over 15: 12*10 + 12*5</proposal>
+  <proposal idx="1">Double and halve: 6*30</proposal>
+</node>
+<node>
+  <parent>1</parent>
+```
+
+The model writes the rest of that node (and possibly more nodes). Text after
+`</trace>` is ignored. Explored branches below the owner node are left out, but
+every proposal of each node on the path is still listed, so `idx` values stay
+the same as in the tree.
+
+```python
+result = search(root, complete=my_complete)  # my_complete(prefix: str) -> str
+```
+
+| Function | Purpose |
+| --- | --- |
+| `encode_trace(node)` | Path down to `node` as XML nodes |
+| `completion_prefix(node, proposal)` | Document to continue, and its open node |
+| `expand_completion(node, proposal, complete)` | One completion call |
+
+### gpt-oss-120b on Tinker
+
+[`tinker_llm.py`](tinker_llm.py) runs `openai/gpt-oss-120b` through
+[Tinker](https://tinker-docs.thinkingmachines.ai/). Install and log in:
+
+```bash
+uv add tinker tinker-cookbook
+```
+
+```bash
+uv run tinker auth login
+```
+
+(or set `TINKER_API_KEY`). Then:
+
+```python
+from llm import search
+from tinker_llm import TinkerLLM
+from tree import Node
+
+llm = TinkerLLM.create()  # openai/gpt-oss-120b, renderer gpt_oss_medium_reasoning
+result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10)
+```
+
+- The prompt is rendered with the cookbook's gpt-oss renderer (harmony format).
+  `SYSTEM_PROMPT` becomes the developer instructions.
+- gpt-oss reasons in its analysis channel first; only the final channel is
+  returned to `llm.py`. Reasoning tokens count toward `max_tokens` (default 16384).
+- `llm.last` keeps the last call's final text, thinking, sampled tokens,
+  per-token log-probs and whether it ended cleanly.
+- Options: `TinkerLLM.create(model=..., renderer_name="gpt_oss_low_reasoning" | "gpt_oss_high_reasoning", max_tokens=..., temperature=..., model_path=...)`.
+  `model_path` samples from your own saved weights instead of the base model.
+- `TinkerCompleter.create()` is the completion-mode adapter: plain text in and
+  out, no chat template, default model `Qwen/Qwen3.5-35B-A3B-Base`, stops at
+  `</trace>`. Use it as `search(root, complete=TinkerCompleter.create())`.
+
+### Qwen3.6-35B-A3B with assistant prefill
+
+The cleanest way to run the cut-trace workflow on a chat model: the assistant
+reply is **pre-started** with the trace, so choosing a proposal is just cutting
+the trace and setting `<parent>`, and the model continues its own reply.
+
+```python
+from llm import search
+from tinker_llm import TinkerPrefill
+from tree import Node
+
+prefill = TinkerPrefill.create()  # Qwen/Qwen3.6-35B-A3B, renderer qwen3_5_disable_thinking
+result = search(Node.new_root("What is 12 * 15?"), prefill=prefill, max_calls=10)
+```
+
+- System message: `SYSTEM_PROMPT`. User message: the question. Assistant
+  prefill: `<trace>`, the trace cut after the node that owns the proposal,
+  and an open `<node><parent>k</parent>` (`prefill_parts`).
+- The `qwen3_5_disable_thinking` renderer opens the assistant turn with an
+  empty, closed `<think></think>` block, so the model answers without hidden
+  reasoning; the reasoning lives in each `<thought>`.
+- The prefill is added with the cookbook's `build_generation_prompt(..., prefill=...)`.
+- `prefill.last` holds only the sampled continuation: its text, tokens and
+  per-token log-probs, so the log-prob of each `<parent>` the model writes can
+  become that proposal's `prob`.
+- Other Qwen hybrids work the same way: `TinkerPrefill.create(model="Qwen/Qwen3.5-397B-A17B")`.
+
+### Inkling-Small, continue mode
+
+`thinkingmachines/Inkling-Small` can't continue a partially written reply (its
+renderer rejects a prefill), so the cut trace goes in the **user message**
+instead, and the reply is the continuation (`mode="continue"`):
+
+```python
+from llm import search
+from tinker_llm import TinkerLLM
+from tree import Node
+
+llm = TinkerLLM.inkling()  # Inkling-Small, renderer tml_v0, effort=0.0
+result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10, mode="continue")
+```
+
+- The user message is `CONTINUE_INSTRUCTION` followed by the question and the
+  trace cut after the node that owns the proposal, ending in an open
+  `<node><parent>k</parent>`. `SYSTEM_PROMPT` (with the example) stays the
+  system message.
+- The reply may continue inside the open node or rewrite it from `<node>`; a
+  rewritten node must keep the chosen `<parent>`.
+- `effort` is Inkling's thinking-effort control in [0, 1). `0.0` steers it
+  toward no reasoning but doesn't forbid it; any reasoning it does write is
+  kept in `llm.last.thinking`, not in the tree.
+- Continue mode works with any chat model: `search(root, llm, mode="continue")`.
+
 ## Tests
 
 ```bash
-python3 -m unittest -v test_tree test_llm
+python3 -m unittest -v test_tree test_llm test_tinker_llm
 ```
 
 The `example.yaml` tests are skipped if PyYAML is not installed.
