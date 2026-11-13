@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thought Tree Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f4f2; --panel: #ffffff; --text: #1f2328; --muted: #6b7075; --line: #d3d6da;
+    --edge: #8f98a3; --accent: #3b6fd8; --answer: #1f8a4c; --answer-bg: #eaf6ee;
+    --proposed: #9aa0a6; --bar: #e3e8f2; --sel: #3b6fd8; --code: #f0f1f3;
+    --key: #8a3ffc; --str: #1f6f3a; --num: #b45309; --null: #9aa0a6;
+    --root: #3b6fd8; --root-bg: #eaf0fc; --inner: #b9bec5; --inner-bg: #ffffff;
+    --explored: #3b6fd8; --explored-bg: #eef3fd; --unexplored: #c97a10; --unexplored-bg: #fdf4e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141619; --panel: #1e2125; --text: #e6e8ea; --muted: #9aa0a6; --line: #363a40;
+      --edge: #5f6873; --accent: #7aa2f7; --answer: #4cc07a; --answer-bg: #1b3024;
+      --proposed: #6b7075; --bar: #2b3445; --sel: #7aa2f7; --code: #272b30;
+      --key: #c4a5ff; --str: #7fd49b; --num: #f5b86b; --null: #6b7075;
+      --root: #7aa2f7; --root-bg: #1d2638; --inner: #4a5059; --inner-bg: #1e2125;
+      --explored: #7aa2f7; --explored-bg: #1f2738; --unexplored: #e0a040; --unexplored-bg: #2e2617;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font: 13px/1.4 system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 15px; margin: 0 8px 0 0; }
+  header .q { font-weight: 600; flex: 1 1 200px; min-width: 0; }
+  button, .file { font: inherit; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); cursor: pointer; }
+  .file input { display: none; }
+
+  #viewport { position: relative; flex: 1; overflow: auto; }
+  #canvas { position: relative; transform-origin: 0 0; }
+  #edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  #edges path { fill: none; stroke: var(--edge); stroke-width: 1.5; }
+  #edges circle { fill: var(--edge); }
+
+  /* A node box shows ONLY that node's own attributes: thought, answer, proposals. */
+  .node { position: absolute; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.06); cursor: pointer; }
+  .node.root { border: 2px solid var(--root); background: var(--root-bg); }
+  .node.inner { border: 2px solid var(--inner); background: var(--inner-bg); }
+  .node.answer { border: 2px solid var(--answer); background: var(--answer-bg); }
+  .node.root .node-head { border-bottom-color: var(--root); }
+  .node.answer .node-head { border-bottom-color: var(--answer); }
+  .node.selected { box-shadow: 0 0 0 2px var(--sel); }
+  .node-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+  .node-head .id { font-family: ui-monospace, monospace; color: var(--text); font-weight: 600; }
+  .field { padding: 6px 10px; }
+  .field + .field { border-top: 1px dashed var(--line); }
+  .fname { font-family: ui-monospace, monospace; font-size: 10px; color: var(--key); display: block; margin-bottom: 2px; }
+  .thought { white-space: pre-wrap; }
+  .null { color: var(--null); font-style: italic; }
+  .props { list-style: none; margin: 4px 0 0; padding: 0; display: flex; gap: 6px; align-items: stretch; }
+  .prop { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 5px 8px; border: 1px solid var(--explored); border-bottom-width: 4px; border-radius: 6px; background: var(--explored-bg); position: relative; }
+  .prop.unexplored { border-color: var(--unexplored); border-style: dashed; border-bottom-style: solid; background: var(--unexplored-bg); }
+  .prop .ptitle { flex: 1; }
+  .prop .scores { flex-direction: column; gap: 1px; }
+  .prop.unexplored .target { color: var(--unexplored); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 11px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 2px solid; }
+  .legend .l-root { border-color: var(--root); background: var(--root-bg); }
+  .legend .l-inner { border-color: var(--inner); background: var(--inner-bg); }
+  .legend .l-answer { border-color: var(--answer); background: var(--answer-bg); }
+  .legend .l-explored { border: 1px solid var(--explored); border-bottom-width: 4px; background: var(--explored-bg); }
+  .legend .l-unexplored { border: 1px dashed var(--unexplored); border-bottom: 4px solid var(--unexplored); background: var(--unexplored-bg); }
+  .prop .ptitle { font-weight: 600; }
+  .prop .target { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .prop .scores { display: flex; }
+  .score { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { width: 46px; height: 5px; background: var(--bar); border-radius: 3px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .bar.value > span { background: var(--answer); }
+
+  /* Top-right: structure of a Node (schema, or the selected node's values). */
+  #struct { position: fixed; top: 58px; right: 16px; width: 300px; max-height: calc(100% - 74px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); z-index: 10; }
+  #struct h2 { margin: 0; padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  #struct h2 small { font-weight: normal; color: var(--muted); }
+  #struct pre { margin: 0; padding: 10px 12px; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; word-break: break-word; }
+  #struct .k { color: var(--key); } #struct .s { color: var(--str); } #struct .n { color: var(--num); }
+  #struct .z { color: var(--null); } #struct .t { color: var(--muted); }
+  .msg { color: var(--muted); padding: 40px; text-align: center; }
+  .error { color: #c0392b; white-space: pre-wrap; padding: 20px; }
+
+  @media (max-width: 700px) {
+    #struct { position: static; width: auto; max-height: 40vh; margin: 8px 16px; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Thought Tree</h1>
+  <span class="q" id="question"></span>
+  <span class="legend">
+    <span><i class="l-root"></i>root</span>
+    <span><i class="l-inner"></i>node</span>
+    <span><i class="l-answer"></i>answer node</span>
+    <span><i class="l-explored"></i>explored proposal</span>
+    <span><i class="l-unexplored"></i>unexplored proposal</span>
+  </span>
+  <button id="zoom-out" title="Zoom out">−</button>
+  <button id="zoom-reset" title="Reset zoom">100%</button>
+  <button id="zoom-in" title="Zoom in">+</button>
+  <label class="file">Open YAML / JSON…<input type="file" id="file" accept=".yaml,.yml,.json"></label>
+</header>
+<aside id="struct"></aside>
+<div id="viewport"><div id="canvas"><svg id="edges"></svg></div></div>
+
+<script>
+const NODE_W = () => (matchMedia("(max-width: 700px)").matches ? 230 : 280);
+const COL_GAP = 40, ROW_GAP = 70, PAD = 24;
+const canvas = document.getElementById("canvas");
+const viewport = document.getElementById("viewport");
+const edgesSvg = document.getElementById("edges");
+const structEl = document.getElementById("struct");
+const state = { data: null, nodes: [], selected: null, scale: 1, bounds: { w: 0, h: 0 } };
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = x => (x == null ? null : Number(x).toFixed(2));
+
+// ---- model: flatten the dict tree into Node records with ids and parent links ----
+function buildModel(rootDict) {
+  const nodes = [];
+  function visit(dict, parent, depth) {
+    const n = { id: "n" + nodes.length, dict, parent, depth, proposals: [] };
+    nodes.push(n);
+    for (const p of dict.proposals || []) {
+      const prop = { title: p.title, value: p.value ?? null, prob: p.prob ?? null, child: null, raw: p };
+      n.proposals.push(prop);
+      if (p.node) prop.child = visit(p.node, n, depth + 1);
+    }
+    return n;
+  }
+  const root = visit(rootDict, null, 0);
+  return { root, nodes };
+}
+
+// ---- render one node box: only its own attributes ----
+function scoreHtml(label, x, cls) {
+  if (x == null) return `<span class="score">${label} <span class="null">null</span></span>`;
+  const pct = Math.max(0, Math.min(1, x)) * 100;
+  return `<span class="score">${label} <span class="bar ${cls}"><span style="width:${pct}%"></span></span> ${fmt(x)}</span>`;
+}
+
+function nodeHtml(n, model) {
+  const d = n.dict;
+  const props = n.proposals.length
+    ? `<ul class="props">${n.proposals.map((p, i) => `
+        <li class="prop ${p.child ? "" : "unexplored"}" data-i="${i}">
+          <span class="ptitle">${esc(p.title)}</span>
+          <span class="target">${p.child ? "→ " + p.child.id : "unexplored"}</span>
+          <span class="scores">${scoreHtml("prob", p.prob, "prob")}${scoreHtml("value", p.value, "value")}</span>
+        </li>`).join("")}</ul>`
+    : `<span class="null">[]</span>`;
+  return `
+    <div class="node-head"><span class="id">${n.id}</span><span>depth ${n.depth}</span></div>
+    <div class="field"><span class="fname">thought</span>${d.thought != null ? `<span class="thought">${esc(d.thought)}</span>` : `<span class="null">null</span>`}</div>
+    <div class="field"><span class="fname">proposals</span>${props}</div>`;
+}
+
+// ---- sizing: a node is wide enough to hold its proposals side by side ----
+const PROP_W = () => (matchMedia("(max-width: 700px)").matches ? 140 : 165);
+function nodeWidth(n) {
+  const k = n.proposals.length;
+  return Math.max(NODE_W(), k * PROP_W() + (k - 1) * 6 + 22);
+}
+
+// ---- layout: top-down tidy tree; each depth is a row, parents centered over children ----
+function layout(model) {
+  const width = new Map();
+  const kids = n => n.proposals.map(p => p.child).filter(Boolean);
+  function measure(n) {
+    const ks = kids(n);
+    const span = ks.reduce((s, k, i) => s + measure(k) + (i ? COL_GAP : 0), 0);
+    const total = Math.max(n.w, span);
+    width.set(n, { total, span });
+    return total;
+  }
+  // row height per depth = tallest node at that depth
+  const rowH = [];
+  for (const n of model.nodes) rowH[n.depth] = Math.max(rowH[n.depth] || 0, n.el.offsetHeight);
+  const rowY = [PAD];
+  for (let d = 1; d < rowH.length; d++) rowY[d] = rowY[d - 1] + rowH[d - 1] + ROW_GAP;
+  function place(n, x0) {
+    const { total, span } = width.get(n);
+    n.x = x0 + (total - n.w) / 2;
+    n.y = rowY[n.depth];
+    let x = x0 + (total - span) / 2;
+    for (const k of kids(n)) { place(k, x); x += width.get(k).total + COL_GAP; }
+  }
+  measure(model.root);
+  place(model.root, PAD);
+  let maxX = 0, maxY = 0;
+  for (const n of model.nodes) {
+    n.el.style.left = n.x + "px";
+    n.el.style.top = n.y + "px";
+    maxX = Math.max(maxX, n.x + n.w);
+    maxY = Math.max(maxY, n.y + n.el.offsetHeight);
+  }
+  state.bounds = { w: maxX + PAD + (matchMedia("(max-width: 700px)").matches ? 0 : 320), h: maxY + PAD };
+}
+
+// ---- edges: from the bottom of each proposal to the top of the node it points to ----
+function drawEdges(model) {
+  let svg = "";
+  for (const n of model.nodes) {
+    n.proposals.forEach((p, i) => {
+      if (!p.child) return;
+      const cell = n.el.querySelector(`.prop[data-i="${i}"]`);
+      const x1 = n.x + cell.offsetLeft + cell.offsetWidth / 2;
+      const y1 = n.y + n.el.offsetHeight;
+      const x2 = p.child.x + p.child.w / 2, y2 = p.child.y;
+      const my = (y1 + y2) / 2;
+      svg += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"/>`;
+      svg += `<circle cx="${x1}" cy="${y1}" r="3"/><circle cx="${x2}" cy="${y2}" r="3"/>`;
+    });
+  }
+  edgesSvg.innerHTML = svg;
+}
+
+// ---- top-right panel: Node structure (schema) or selected node's values ----
+const K = k => `<span class="k">${k}</span>`;
+const S = s => `<span class="s">${esc(JSON.stringify(s))}</span>`;
+const N = x => `<span class="n">${x}</span>`;
+const Z = `<span class="z">null</span>`;
+const T = t => `<span class="t">${t}</span>`;
+const val = v => (v == null ? Z : typeof v === "string" ? S(v) : N(v));
+
+function schemaHtml() {
+  return `<h2>Node structure <small>click a node</small></h2><pre>${K("Node")}
+├─ ${K("thought")}:   ${T("str | null")}
+├─ ${K("answer")}:    ${T("bool")}
+├─ ${K("parent")}:    ${T("Node | null")}
+└─ ${K("proposals")}: ${T("list[Proposal]")}
+     ${K("Proposal")}
+     ├─ ${K("title")}: ${T("str")}
+     ├─ ${K("value")}: ${T("float | null")}
+     ├─ ${K("prob")}:  ${T("float | null")}
+     └─ ${K("node")}:  ${T("Node | null")}  ${T("→ edge")}
+
+${T("answer = true  ⇒  proposals = []")}
+${T("root: parent = null, thought = null,")}
+${T("      one proposal titled with the question")}</pre>`;
+}
+
+function nodeStructHtml(n) {
+  const d = n.dict;
+  const props = n.proposals.map((p, i) => {
+    const last = i === n.proposals.length - 1;
+    const pre = last ? "   " : "│  ";
+    return `     ${last ? "└─" : "├─"} [${i}] ${K("Proposal")}
+     ${pre}  ├─ ${K("title")}: ${S(p.title)}
+     ${pre}  ├─ ${K("value")}: ${val(p.value)}
+     ${pre}  ├─ ${K("prob")}:  ${val(p.prob)}
+     ${pre}  └─ ${K("node")}:  ${p.child ? N(p.child.id) : Z}`;
+  }).join("\n");
+  return `<h2>${esc(n.id)} <small><a href="#" id="back">schema</a></small></h2><pre>${K("Node")} ${T(n.id)}
+├─ ${K("thought")}:   ${val(d.thought ?? null)}
+├─ ${K("answer")}:    ${N(!!d.answer)}
+├─ ${K("parent")}:    ${n.parent ? N(n.parent.id) : Z}
+└─ ${K("proposals")}: ${n.proposals.length ? "" : "[]"}
+${props}</pre>`;
+}
+
+function renderStruct() {
+  structEl.innerHTML = state.selected ? nodeStructHtml(state.selected) : schemaHtml();
+  structEl.querySelector("#back")?.addEventListener("click", e => { e.preventDefault(); select(null); });
+}
+
+function select(n) {
+  state.selected = n;
+  for (const m of state.nodes) m.el.classList.toggle("selected", m === n);
+  renderStruct();
+}
+
+// ---- main render ----
+function render() {
+  canvas.querySelectorAll(".node").forEach(el => el.remove());
+  const model = buildModel(state.data);
+  state.nodes = model.nodes;
+  state.selected = null;
+  document.getElementById("question").textContent = "Q: " + (model.root.proposals[0]?.title ?? "");
+  for (const n of model.nodes) {
+    const el = document.createElement("div");
+    const kind = !n.parent ? "root" : n.dict.answer ? "answer" : "inner";
+    el.className = "node " + kind;
+    n.w = nodeWidth(n);
+    el.style.width = n.w + "px";
+    el.innerHTML = nodeHtml(n, model);
+    el.addEventListener("click", e => { e.stopPropagation(); select(n); });
+    canvas.appendChild(el);
+    n.el = el;
+  }
+  layout(model);
+  drawEdges(model);
+  applyScale();
+  renderStruct();
+}
+
+function applyScale() {
+  canvas.style.transform = `scale(${state.scale})`;
+  canvas.style.width = state.bounds.w + "px";
+  canvas.style.height = state.bounds.h + "px";
+  // keep scroll area matching the scaled size
+  viewport.style.setProperty("--w", state.bounds.w * state.scale + "px");
+  canvas.parentElement.style.minWidth = "";
+  canvas.style.marginRight = (state.bounds.w * (state.scale - 1)) + "px";
+  canvas.style.marginBottom = (state.bounds.h * (state.scale - 1)) + "px";
+  document.getElementById("zoom-reset").textContent = Math.round(state.scale * 100) + "%";
+}
+
+function load(text, name) {
+  try {
+    const data = name?.endsWith(".json") ? JSON.parse(text) : jsyaml.load(text);
+    if (!data?.proposals?.length) throw new Error("Expected a root with one proposal (the question).");
+    state.data = data;
+    render();
+  } catch (e) {
+    canvas.querySelectorAll(".node").forEach(el => el.remove());
+    edgesSvg.innerHTML = "";
+    viewport.insertAdjacentHTML("afterbegin", `<p class="error">Could not load ${esc(name || "file")}:\n${esc(e.message)}</p>`);
+  }
+}
+
+viewport.addEventListener("click", () => select(null));
+document.getElementById("zoom-in").onclick = () => { state.scale = Math.min(2, state.scale + 0.1); applyScale(); };
+document.getElementById("zoom-out").onclick = () => { state.scale = Math.max(0.3, state.scale - 0.1); applyScale(); };
+document.getElementById("zoom-reset").onclick = () => { state.scale = 1; applyScale(); };
+document.getElementById("file").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (f) load(await f.text(), f.name);
+});
+let resizeTimer;
+addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => state.data && render(), 150); });
+
+renderStruct();
+// Load ?file=... (default ../example.yaml). Needs an HTTP server; from file:// use the Open button.
+const src = new URLSearchParams(location.search).get("file") || "../example.yaml";
+fetch(src)
+  .then(r => { if (!r.ok) throw new Error(r.status + " " + r.statusText); return r.text(); })
+  .then(t => load(t, src))
+  .catch(() => {
+    viewport.insertAdjacentHTML("afterbegin", `<p class="msg">Couldn't load <code>${esc(src)}</code>.
+      Serve the repo with <code>python3 -m http.server</code> and open <code>/ui/</code>, or use “Open YAML / JSON…”.</p>`);
+  });
+</script>
+</body>
+</html>
