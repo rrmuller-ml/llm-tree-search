@@ -1,9 +1,10 @@
 """Tests for the Tinker adapter with fake client and renderer (no network, no tinker install)."""
 
+import math
 import unittest
 from types import SimpleNamespace
 
-from llm import search
+from llm import expand_prefill, search
 from tinker_llm import TinkerCompleter, TinkerLLM, TinkerPrefill, _split_content
 from tree import Node
 
@@ -109,45 +110,122 @@ class TestTinkerCompleter(unittest.TestCase):
         self.assertEqual(completer.last.logprobs, [-0.1, -0.2, -0.3])
 
 
-class PrefillRenderer:
+class FakeModelInput:
+    def __init__(self, ids):
+        self.ids = ids
+
+    def to_ints(self):
+        return list(self.ids)
+
+
+class VocabTokenizer:
+    """Tokens are indices into a vocab of text pieces."""
+
     def __init__(self):
+        self.vocab: list[str] = []
+
+    def ids(self, pieces):
+        out = []
+        for piece in pieces:
+            if piece not in self.vocab:
+                self.vocab.append(piece)
+            out.append(self.vocab.index(piece))
+        return out
+
+    def decode(self, ids, **kwargs):
+        return "".join(self.vocab[i] for i in ids)
+
+
+PROMPT = ["SYS USER", "<trace>", "\n", "<node>", "\n  ", "<parent>", "1", "</parent>", "\n"]
+GEN = ["  ", "<thought>", "via B", "</thought>", "<proposal>", "a", "</proposal>", "<proposal>", "b",
+       "</proposal>", "</node>", "\n", "<node>", "<parent>", "1", "</parent>", "<thought>", "b gives 180",
+       "</thought>", "</node>"]
+
+
+class PrefillRenderer:
+    def __init__(self, prompt_ids):
+        self.prompt_ids = prompt_ids
         self.calls = []
 
     def build_generation_prompt(self, messages, prefill=None):
         self.calls.append((messages, prefill))
-        return "MODEL_INPUT"
+        return FakeModelInput(self.prompt_ids)
 
 
-class TextTokenizer:
-    """decode() returns a fixed continuation, like a tokenizer decoding sampled tokens."""
-
-    def __init__(self, text):
-        self.text = text
+class PrefillClient:
+    def __init__(self, gen_ids, gen_topk, prompt_topk):
+        self.gen_ids, self.gen_topk, self.prompt_topk = gen_ids, gen_topk, prompt_topk
         self.kwargs = None
 
-    def decode(self, tokens, **kwargs):
+    def sample(self, prompt, num_samples, sampling_params, **kwargs):
         self.kwargs = kwargs
-        return self.text
+        seq = SimpleNamespace(tokens=self.gen_ids, logprobs=[-0.5] * len(self.gen_ids), topk_logprobs=self.gen_topk)
+        return FakeFuture(SimpleNamespace(sequences=[seq], topk_prompt_logprobs=self.prompt_topk))
+
+
+def make_prefill(prompt_topk_full=True):
+    tok = VocabTokenizer()
+    prompt_ids = tok.ids(PROMPT)
+    gen_ids = tok.ids(GEN)
+    d0, d1, d2, x = tok.ids(["0", "1", "2", "x"])
+    gen_topk = [None] * len(gen_ids)
+    gen_topk[GEN.index("1")] = [(d1, -0.1), (d0, -2.5), (x, -6.0)]
+    digit_pos = PROMPT.index("1")
+    prompt_topk = [None] * len(prompt_ids)
+    prompt_topk[digit_pos] = [(d1, -0.2), (d0, -1.8), (d2, -7.0)]
+    if not prompt_topk_full:  # only the last n positions returned
+        prompt_topk = prompt_topk[-4:]
+    client = PrefillClient(gen_ids, gen_topk, prompt_topk)
+    llm = TinkerPrefill(client, PrefillRenderer(prompt_ids), tok, SimpleNamespace(stop=[]))
+    return llm, client
 
 
 class TestTinkerPrefill(unittest.TestCase):
-    def test_passes_prefill_and_returns_continuation(self):
-        client, renderer = FakeSamplingClient(), PrefillRenderer()
-        tok = TextTokenizer("  <thought>t</thought>\n</node>")
-        llm = TinkerPrefill(client, renderer, tok, SimpleNamespace(stop=[3]))
-        self.assertEqual(llm("SYS", "USER", "<trace>\n<node>\n"), "  <thought>t</thought>\n</node>")
-        messages, prefill = renderer.calls[0]
-        self.assertEqual(messages, [{"role": "system", "content": "SYS"}, {"role": "user", "content": "USER"}])
-        self.assertEqual(prefill, "<trace>\n<node>\n")
-        self.assertEqual(tok.kwargs, {"skip_special_tokens": True})
-        self.assertTrue(llm.last.clean)  # fake tokens end with 3, the stop token
-        self.assertEqual(llm.last.logprobs, [-0.1, -0.2, -0.3])
+    def test_reply_text_and_request(self):
+        llm, client = make_prefill()
+        reply = llm("SYS", "USER", "<trace>\n")
+        self.assertEqual(reply.text, "".join(GEN))
+        self.assertEqual(client.kwargs["topk_sample_logprobs"], 20)
+        self.assertEqual(client.kwargs["topk_prompt_logprobs"], 20)
+        self.assertIn("prompt_logprobs_last_n", client.kwargs)
+        self.assertTrue(client.kwargs["include_prompt_logprobs"])  # required by the SDK with last_n
+
+    def test_reads_choices_from_topk(self):
+        llm, _ = make_prefill()
+        reply = llm("SYS", "USER", "<trace>\n")
+        self.assertEqual(reply.choice_logprobs, [{1: -0.1, 0: -2.5}])  # "x" is not a number
+        self.assertEqual(reply.prefill_choice, {1: -0.2, 0: -1.8, 2: -7.0})
+
+    def test_prompt_topk_for_last_n_only(self):
+        llm, _ = make_prefill(prompt_topk_full=False)
+        reply = llm("SYS", "USER", "<trace>\n")
+        self.assertEqual(reply.prefill_choice, {1: -0.2, 0: -1.8, 2: -7.0})
+
+    def test_logprobs_land_on_the_right_proposals(self):
+        llm, _ = make_prefill()
+        root = Node.new_root("Q?", "Split.")
+        root.first.propose("A")
+        root.first.propose("B")
+        created = expand_prefill(root.first, "B", llm)
+        a, b = root.first.proposals
+        self.assertEqual((a.logprob, b.logprob), (-1.8, -0.2))  # from the prompt (our choice)
+        self.assertAlmostEqual(b.prob, math.exp(-0.2))
+        pa, pb = created[0].proposals
+        self.assertEqual((pa.logprob, pb.logprob), (-2.5, -0.1))  # from the sampled <parent>
+        self.assertTrue(created[1].is_answer)
+        self.assertEqual(Node.from_dict(root.to_dict()).first.proposals[0].logprob, -1.8)
+
+    def test_no_topk_means_no_logprobs(self):
+        llm, client = make_prefill()
+        client.gen_topk, client.prompt_topk = None, None
+        reply = llm("SYS", "USER", "<trace>\n")
+        self.assertEqual(reply.choice_logprobs, [None])
+        self.assertIsNone(reply.prefill_choice)
 
     def test_plugs_into_search(self):
-        tok = TextTokenizer("  <thought>12*15 = 180</thought>\n</node>\n</trace>")
-        llm = TinkerPrefill(FakeSamplingClient(), PrefillRenderer(), tok, SimpleNamespace(stop=[]))
-        result = search(Node.new_root("What is 12 * 15?"), prefill=llm, max_calls=3)
-        self.assertEqual(result.answer.thought, "12*15 = 180")
+        llm, _ = make_prefill()
+        result = search(Node.new_root("Q?"), prefill=llm, max_calls=3)
+        self.assertEqual(result.answer.thought, "b gives 180")
 
 
 if __name__ == "__main__":

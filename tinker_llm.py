@@ -213,6 +213,7 @@ class TinkerCompleter:
 
 
 QWEN_HYBRID = "Qwen/Qwen3.6-35B-A3B"
+PROMPT_TAIL = 32  # prompt tokens to get top-k log-probs for (covers the open <node><parent>k)
 
 
 @dataclass
@@ -224,8 +225,10 @@ class TinkerPrefill:
     and appends `prefix` as plain text (`build_generation_prompt(..., prefill=)`).
     With `qwen3_5_disable_thinking` that turn starts with an empty, closed
     <think></think> block, so the model continues the trace directly, without
-    reasoning. Returned text and `last` cover only the sampled continuation, so
-    the log-probs of each <parent> the model writes are in `last.logprobs`.
+    reasoning. Each call returns an llm.Reply: the continuation text plus, for
+    every <parent> in it and for the one the prefill ends with, the log-prob of
+    each idx digit (from top-k log-probs, so no extra calls). `last` keeps the
+    sampled tokens and their log-probs.
 
         prefill = TinkerPrefill.create()   # Qwen/Qwen3.6-35B-A3B, thinking off
         result = search(Node.new_root("What is 12 * 15?"), prefill=prefill)
@@ -235,6 +238,7 @@ class TinkerPrefill:
     renderer: Any
     tokenizer: Any
     sampling_params: Any
+    topk: int = 20  # top-k log-probs per position, used to read <parent> choices
     last: Optional[Sample] = field(default=None, repr=False)
 
     @classmethod
@@ -264,23 +268,86 @@ class TinkerPrefill:
         )
         return cls(client, renderer, tokenizer, params)
 
-    def __call__(self, system: str, user: str, prefill: str) -> str:
+    def __call__(self, system: str, user: str, prefill: str) -> "Reply":
+        from llm import Reply
+
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
         model_input = self.renderer.build_generation_prompt(messages, prefill=prefill)
         response = _resolve(self.sampling_client.sample(
-            prompt=model_input, num_samples=1, sampling_params=self.sampling_params,
+            prompt=model_input,
+            num_samples=1,
+            sampling_params=self.sampling_params,
+            topk_sample_logprobs=self.topk,
+            include_prompt_logprobs=True,
+            topk_prompt_logprobs=self.topk,
+            prompt_logprobs_last_n=PROMPT_TAIL,
         ))
         seq = response.sequences[0]
-        text = self.tokenizer.decode(list(seq.tokens), skip_special_tokens=True)
+        tokens = list(seq.tokens)
+        text = self.tokenizer.decode(tokens, skip_special_tokens=True)
         stops = getattr(self.sampling_params, "stop", None) or []
         self.last = Sample(
             text=text,
             thinking="",
-            tokens=list(seq.tokens),
+            tokens=tokens,
             logprobs=list(seq.logprobs) if getattr(seq, "logprobs", None) is not None else None,
-            clean=not stops or (bool(seq.tokens) and seq.tokens[-1] in stops),
+            clean=not stops or (bool(tokens) and tokens[-1] in stops),
         )
-        return text
+        return Reply(
+            text=text,
+            choice_logprobs=self._sampled_choices(tokens, getattr(seq, "topk_logprobs", None), text),
+            prefill_choice=self._prefill_choice(
+                model_input.to_ints(), getattr(response, "topk_prompt_logprobs", None)
+            ),
+        )
+
+    # --- reading <parent> choices from top-k log-probs ----------------------
+    def _digit_dist(self, entries: Any) -> Optional[dict[int, float]]:
+        """{idx: logprob} from a position's top-k (token_id, logprob) list,
+        keeping only tokens that decode to a bare number."""
+        if not entries:
+            return None
+        dist: dict[int, float] = {}
+        for token_id, lp in entries:
+            s = self.tokenizer.decode([token_id])
+            if s.isdigit():
+                k = int(s)
+                dist[k] = max(lp, dist.get(k, float("-inf")))
+        return dist
+
+    def _sampled_choices(self, tokens: list[int], topk: Any, text: str) -> list:
+        """One entry per <parent> tag in the generated text: the distribution at
+        the token right after it (None if that token isn't a number or top-k is
+        missing). If tags can't be lined up with tokens, all entries are None."""
+        pieces = [self.tokenizer.decode([t]) for t in tokens]
+        n_tags = "".join(pieces).count("<parent>")
+        choices: list = []
+        tail = ""
+        for i, piece in enumerate(pieces):
+            if tail.endswith("<parent>"):
+                entries = topk[i] if topk is not None and i < len(topk) else None
+                choices.append(self._digit_dist(entries) if piece.isdigit() else None)
+            tail = (tail + piece)[-32:]
+        return choices if len(choices) == n_tags else [None] * n_tags
+
+    def _prefill_choice(self, prompt_tokens: list[int], topk: Any) -> Optional[dict[int, float]]:
+        """Distribution at the idx digit of the last <parent> in the prompt (the
+        choice the pre-started reply ends with), from top-k prompt log-probs."""
+        if not topk:
+            return None
+        n = len(prompt_tokens)
+        offset = 0 if len(topk) == n else n - len(topk)
+        tail_start = max(0, n - PROMPT_TAIL)
+        pieces = [self.tokenizer.decode([t]) for t in prompt_tokens[tail_start:]]
+        found = None
+        tail = ""
+        for j, piece in enumerate(pieces):
+            if tail.endswith("<parent>") and piece.isdigit():
+                found = tail_start + j
+            tail = (tail + piece)[-32:]
+        if found is None or not 0 <= found - offset < len(topk):
+            return None
+        return self._digit_dist(topk[found - offset])

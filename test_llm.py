@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from llm import (
@@ -24,6 +25,7 @@ from llm import (
     validate_chain,
     valid_prefix,
     PartialChain,
+    Reply,
 )
 from tree import Node
 
@@ -386,6 +388,60 @@ class TestRepairAndSalvage(unittest.TestCase):
         self.assertEqual(result.answer.title, "A")
         self.assertEqual(result.calls, 2)
         self.assertEqual(len(result.errors), 1)
+
+
+class TestChoiceLogprobs(unittest.TestCase):
+    REPLY = ("  <thought>Split.</thought>\n  <proposal>A</proposal>\n  <proposal>B</proposal>\n</node>\n"
+             "<node>\n  <parent>1</parent>\n  <thought>via B: 180</thought>\n</node>\n")
+
+    def test_first_call_scores_generated_choices(self):
+        root = Node.new_root(Q)
+        reply = Reply(self.REPLY, choice_logprobs=[{0: -1.2, 1: -0.4}])
+        expand_prefill(root, Q, lambda s, u, p: reply)
+        a, b = root.first.proposals
+        self.assertEqual((a.logprob, b.logprob), (-1.2, -0.4))
+        self.assertAlmostEqual(a.prob, math.exp(-1.2))  # raw, not renormalized
+        self.assertIsNone(root.proposals[0].logprob)  # the question has no choice
+
+    def test_prefill_choice_scores_owner_node(self):
+        root = Node.new_root(Q, "Split.")
+        root.first.propose("A")
+        root.first.propose("B")
+        reply = Reply("  <thought>B: 180</thought>\n</node>", prefill_choice={0: -0.3, 1: -1.5})
+        expand_prefill(root.first, "B", lambda s, u, p: reply)
+        self.assertEqual([p.logprob for p in root.first.proposals], [-0.3, -1.5])
+
+    def test_missing_idx_and_unknown_dist(self):
+        root = Node.new_root(Q)
+        reply = Reply(self.REPLY, choice_logprobs=[{1: -0.1}])
+        expand_prefill(root, Q, lambda s, u, p: reply)
+        a, b = root.first.proposals
+        self.assertIsNone(a.logprob)
+        self.assertIsNone(a.prob)
+        self.assertEqual(b.logprob, -0.1)
+        root2 = Node.new_root(Q)
+        expand_prefill(root2, Q, lambda s, u, p: Reply(self.REPLY, choice_logprobs=[None]))
+        self.assertIsNone(root2.first.proposals[0].logprob)
+
+    def test_plain_string_reply_has_no_logprobs(self):
+        root = Node.new_root(Q)
+        expand_prefill(root, Q, lambda s, u, p: self.REPLY)
+        self.assertTrue(all(p.logprob is None for p in root.first.proposals))
+
+    def test_rewritten_open_node_uses_reply_choices(self):
+        root = Node.new_root(Q, "Split.")
+        root.first.propose("A")
+        root.first.propose("B")
+        text = "<node>\n  <parent>1</parent>\n  <thought>B: 180</thought>\n</node>"
+        reply = Reply(text, choice_logprobs=[{0: -2.0, 1: -0.2}], prefill_choice={0: -9.0, 1: -9.0})
+        expand_prefill(root.first, "B", lambda s, u, p: reply)
+        self.assertEqual([p.logprob for p in root.first.proposals], [-2.0, -0.2])
+
+    def test_logprob_roundtrip(self):
+        root = Node.new_root(Q)
+        expand_prefill(root, Q, lambda s, u, p: Reply(self.REPLY, choice_logprobs=[{0: -1.2, 1: -0.4}]))
+        again = Node.from_dict(root.to_dict())
+        self.assertEqual([p.logprob for p in again.first.proposals], [-1.2, -0.4])
 
 
 class TestExample(unittest.TestCase):

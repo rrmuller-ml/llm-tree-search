@@ -45,6 +45,7 @@ Two ways to call a model, both using the same format:
 from __future__ import annotations
 
 import html
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Callable, Literal, Optional
@@ -53,7 +54,7 @@ from tree import Node, Proposal
 
 LLM = Callable[[str, str], str]  # (system, prompt) -> reply
 Complete = Callable[[str], str]  # prefix -> continuation
-PrefillLLM = Callable[[str, str, str], str]  # (system, user, assistant prefill) -> continuation
+PrefillLLM = Callable[[str, str, str], "str | Reply"]  # (system, user, assistant prefill) -> continuation
 Score = Callable[[Node, Proposal], float]
 
 EXAMPLE_QUESTION = "What is 14 * 25?"
@@ -378,13 +379,73 @@ def apply_chain(node: Node, proposal: Proposal | str, chain: list[NodeSpec]) -> 
 
 
 # --- loop ------------------------------------------------------------------
-def _apply_reply(node: Node, proposal: Proposal | str, chain: list[NodeSpec]) -> list[Node]:
-    """Apply the valid start of a decoded reply. Raises DecodeError if nothing is
+ChoiceLogprobs = dict[int, float]  # proposal idx -> log-prob of the model writing that idx
+
+
+@dataclass
+class Reply:
+    """A model reply with the log-probs of its <parent> choices.
+
+    Models may return a plain string instead; then no log-probs are recorded.
+    `choice_logprobs` has one entry per <parent> tag in `text`, in order: the
+    distribution over idx digits at the position right after that tag (None
+    where unknown). `prefill_choice` is the same for the <parent> that a
+    pre-started reply or prefix ends with (the choice the code made)."""
+
+    text: str
+    choice_logprobs: list[Optional[ChoiceLogprobs]] = field(default_factory=list)
+    prefill_choice: Optional[ChoiceLogprobs] = None
+
+
+def _text_of(reply: str | Reply) -> str:
+    return reply if isinstance(reply, str) else reply.text
+
+
+def _chain_choices(chain: list[NodeSpec], reply: str | Reply, opener: Optional[str]) -> Optional[list[Optional[ChoiceLogprobs]]]:
+    """Distribution behind each chain node's <parent> (None for nodes without one)."""
+    if isinstance(reply, str):
+        return None
+    rewrote = reply.text.split("</trace>")[0].lstrip().lower().startswith("<node")
+    in_order = list(reply.choice_logprobs)
+    if opener is not None and not rewrote and "<parent>" in opener:
+        in_order.insert(0, reply.prefill_choice)
+    it = iter(in_order)
+    return [next(it, None) if spec.parent is not None else None for spec in chain]
+
+
+def attach_choice_logprobs(
+    node: Node, created: list[Node], chain: list[NodeSpec], choices: list[Optional[ChoiceLogprobs]]
+) -> None:
+    """Store each choice distribution on the proposals it chose among: chain[0]'s
+    choice is among `node`'s proposals, chain[i]'s among created[i-1]'s.
+    Sets `logprob` and the raw `prob = exp(logprob)`; an idx missing from a known
+    distribution (outside the top-k) gets None."""
+    for i, dist in enumerate(choices[: len(created)]):
+        if dist is None:
+            continue
+        owner = node if i == 0 else created[i - 1]
+        for k, prop in enumerate(owner.proposals):
+            idx = k if i == 0 else chain[i - 1].idx_of(k)
+            lp = dist.get(idx)
+            prop.logprob = lp
+            prop.prob = None if lp is None else min(1.0, math.exp(lp))
+
+
+def _apply_reply(
+    node: Node, proposal: Proposal | str, reply: str | Reply, opener: Optional[str] = None
+) -> list[Node]:
+    """Decode a reply (a continuation of `opener` when given), apply its valid
+    start and store any <parent> log-probs. Raises DecodeError if nothing is
     valid (tree unchanged), or PartialChain after applying a valid start."""
+    text = _text_of(reply)
+    chain = decode_continuation(text, opener) if opener is not None else decode_chain(text)
+    choices = _chain_choices(chain, reply, opener)
     good, err = valid_prefix(chain)
     if not good:
         raise DecodeError(err or "no complete <node> in the output")
     created = apply_chain(node, proposal, good)
+    if choices is not None:
+        attach_choice_logprobs(node, created, good, choices)
     if err:
         raise PartialChain(f"kept {len(good)} of {len(chain)} nodes; {err}", created)
     return created
@@ -392,29 +453,29 @@ def _apply_reply(node: Node, proposal: Proposal | str, chain: list[NodeSpec]) ->
 
 def expand(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node]:
     """One chat call: develop `proposal` with a depth-first chain of nodes."""
-    text = llm(SYSTEM_PROMPT, encode_context(node, proposal))
-    return _apply_reply(node, proposal, decode_chain(text))
+    return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, encode_context(node, proposal)))
 
 
 def expand_completion(node: Node, proposal: Proposal | str, complete: Complete) -> list[Node]:
     """One completion call: the model continues the trace from an open node whose
     <parent> picks `proposal`. Anything after </trace> is ignored."""
     prefix, opener = completion_prefix(node, proposal)
-    return _apply_reply(node, proposal, decode_continuation(complete(prefix), opener))
+    return _apply_reply(node, proposal, complete(prefix), opener)
 
 
 def expand_continue(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node]:
     """One chat call in continue mode: the cut trace is the user message and the
     model's reply continues it (see continue_prompt)."""
     prompt, opener = continue_prompt(node, proposal)
-    return _apply_reply(node, proposal, decode_continuation(llm(SYSTEM_PROMPT, prompt), opener))
+    return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, prompt), opener)
 
 
 def expand_prefill(node: Node, proposal: Proposal | str, llm: PrefillLLM) -> list[Node]:
     """One chat call with assistant prefill: the reply is pre-started with the cut
-    trace and the model continues it (see prefill_parts)."""
+    trace and the model continues it (see prefill_parts). If the model returns a
+    Reply with log-probs, every <parent> choice in the call gets them."""
     user, prefill, opener = prefill_parts(node, proposal)
-    return _apply_reply(node, proposal, decode_continuation(llm(SYSTEM_PROMPT, user, prefill), opener))
+    return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, user, prefill), opener)
 
 
 def depth_first(node: Node, proposal: Proposal) -> float:

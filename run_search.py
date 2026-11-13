@@ -1,13 +1,14 @@
 """Run a tree search on Tinker and save the tree as YAML for the UI.
 
 New search:
-    uv run python run_search.py "What is 12 * 15?" --out runs/12x15.yaml
+    uv run python run_search.py "What is 17 * 23?" --out runs/17x23.yaml
 
 Expand one unexplored proposal of a saved tree (one call):
-    uv run python run_search.py --load runs/12x15.yaml \\
-        --expand "Use 12 * 15 = 12 * (10 + 5)." --out runs/12x15_expanded.yaml
+    uv run python run_search.py --load runs/17x23.yaml \\
+        --expand "Use the difference of squares method: (20 - 3) * (20 + 3) = 20^2 - 3^2." \\
+        --out runs/17x23_expanded.yaml
 
-Then open http://localhost:8000/ui/?file=../runs/12x15.yaml (serve the repo
+Then open http://localhost:8000/ui/?file=../runs/17x23.yaml (serve the repo
 with `python3 -m http.server 8000`).
 """
 

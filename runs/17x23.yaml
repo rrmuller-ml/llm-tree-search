@@ -1,0 +1,20 @@
+proposals:
+- title: What is 17 * 23?
+  node:
+    thought: To calculate 17 * 23, I can use the distributive property by breaking 23 into 20 + 3.
+    proposals:
+    - title: Calculate 17 * 20 and 17 * 3 separately, then add them.
+      prob: 0.9324305484811831
+      logprob: -0.06996060907840729
+      node:
+        thought: 'Using the first proposal: 17 * 20 = 340. 17 * 3 = 51.'
+        proposals:
+        - title: Add 340 and 51.
+          prob: 0.9974400977921369
+          logprob: -0.0025631843600422144
+          node:
+            thought: 340 + 51 = 391.
+            answer: true
+    - title: 'Use the difference of squares method: (20 - 3) * (20 + 3) = 20^2 - 3^2.'
+      prob: 0.06754504338979031
+      logprob: -2.694960594177246

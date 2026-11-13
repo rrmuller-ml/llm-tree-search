@@ -32,6 +32,7 @@ class Proposal:
     value: Optional[float] = None  # estimated quality of this path
     prob: Optional[float] = None  # policy probability of exploring this path
     node: Optional[Node] = field(default=None, repr=False)  # set once developed
+    logprob: Optional[float] = None  # raw log-prob of the LLM choosing this path (prob = exp(logprob))
 
     def __post_init__(self) -> None:
         _check_prob(self.prob)
@@ -305,6 +306,7 @@ class Node:
         if self.proposals:
             d["proposals"] = [
                 {k: v for k, v in (("title", p.title), ("value", p.value), ("prob", p.prob),
+                                   ("logprob", p.logprob),
                                    ("node", p.node.to_dict() if p.node else None)) if v is not None}
                 for p in self.proposals
             ]
@@ -314,7 +316,8 @@ class Node:
     def from_dict(cls, d: dict, parent: Optional[Node] = None) -> Node:
         node = cls(thought=d.get("thought"), answer=bool(d.get("answer", False)), parent=parent)
         for pd in d.get("proposals", []):
-            p = Proposal(title=pd["title"], value=pd.get("value"), prob=pd.get("prob"))
+            p = Proposal(title=pd["title"], value=pd.get("value"), prob=pd.get("prob"),
+                         logprob=pd.get("logprob"))
             if "node" in pd:
                 p.node = cls.from_dict(pd["node"], parent=node)
             node.proposals.append(p)
@@ -365,11 +368,12 @@ def _merge_into(dst: Node, src: Node) -> None:
     for sp in src.proposals:
         dp = dst.get_proposal(sp.title)
         if dp is None:
-            dp = Proposal(title=sp.title, value=sp.value, prob=sp.prob)
+            dp = Proposal(title=sp.title, value=sp.value, prob=sp.prob, logprob=sp.logprob)
             dst.proposals.append(dp)
         else:
             dp.value = dp.value if dp.value is not None else sp.value
             dp.prob = dp.prob if dp.prob is not None else sp.prob
+            dp.logprob = dp.logprob if dp.logprob is not None else sp.logprob
         if sp.node is not None:
             if dp.node is None:
                 dp.node = Node(parent=dst)

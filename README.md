@@ -31,7 +31,15 @@ uv run tinker auth login
 ```
 
 ```bash
-uv run python run_search.py "What is 12 * 15?" --out runs/12x15.yaml --max-calls 3
+uv run python run_search.py "What is 17 * 23?" --out runs/17x23.yaml --max-calls 3
+```
+
+To develop one unexplored proposal of a saved tree (one call):
+
+```bash
+uv run python run_search.py --load runs/17x23.yaml \
+    --expand "Use the difference of squares method: (20 - 3) * (20 + 3) = 20^2 - 3^2." \
+    --out runs/17x23_expanded.yaml
 ```
 
 This runs `Qwen/Qwen3.6-35B-A3B` on Tinker with thinking off and assistant
@@ -42,10 +50,17 @@ and saves it as YAML. To view it, serve the repo and open the file in the UI:
 python3 -m http.server 8000
 ```
 
-<http://localhost:8000/ui/?file=../runs/12x15.yaml>
+<http://localhost:8000/ui/?file=../runs/17x23.yaml>
 
-[`runs/12x15.yaml`](runs/12x15.yaml) is a saved run: one call, three nodes,
-answer 180, with two proposals left unexplored.
+Saved runs, both from these commands:
+
+- [`runs/17x23.yaml`](runs/17x23.yaml): one call, answer 391 by distributing
+  (340 + 51). The first choice was "Calculate 17 * 20 and 17 * 3" (p = 0.93);
+  "Use the difference of squares method" (p = 0.07) is left unexplored.
+- [`runs/17x23_expanded.yaml`](runs/17x23_expanded.yaml): the same tree after
+  expanding the difference-of-squares proposal: three new nodes and a second
+  answer, 400 - 9 = 391. "Calculate 20^2 which is 400." (p = 0.86) is still
+  unexplored.
 
 `run_search.py` options: `--max-calls N`, `--model NAME`, and `--mode`:
 
@@ -200,9 +215,18 @@ Rules:
   with no valid node raises `DecodeError` and leaves the tree unchanged.
   `apply_chain` on its own stays strict.
 
-The LLM writes no scores. `Proposal.prob` is meant to come from the log-prob
-of the LLM writing a given `<parent>` after a node, and `Proposal.value` from
-a trained critic; the codec leaves both unset.
+The LLM writes no scores. `Proposal.value` is meant to come from a trained
+critic and is left unset. `Proposal.logprob` is the log-prob of the LLM
+writing that proposal's idx right after `<parent>`, and `Proposal.prob` is the
+raw `exp(logprob)` (not renormalized over siblings).
+
+They come for free from generation: a model may return an `llm.Reply` with the
+idx distribution at each `<parent>` (`choice_logprobs`) and at the `<parent>`
+a pre-started reply ends with (`prefill_choice`). `TinkerPrefill` reads both
+from top-k log-probs in the same sampling call, so the first call fills every
+choice it writes, and an expansion fills the choice the code made. A choice
+nothing has followed yet (a reply that stopped on open proposals) has no
+`prob` until it is expanded. The UI shows `prob`; `logprob` is in the YAML.
 
 The prompt for each call (`encode_context`) holds the question, the path so
 far (each step's title and thought) and the proposal to develop:
