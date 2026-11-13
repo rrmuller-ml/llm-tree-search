@@ -84,6 +84,7 @@ Each call costs Tinker credits; `--max-calls` caps them.
 | [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (Qwen), `TinkerLLM` (gpt-oss, Inkling), `TinkerCompleter` (base models) |
 | [`run_search.py`](run_search.py) | Command line: run a search on Tinker and save the tree |
 | [`eval_aime.py`](eval_aime.py) | AIME 2024 + 2025 evaluation: CoT vs one tree chain, strict format scoring |
+| [`expand_aime.py`](expand_aime.py) | Grow saved AIME trees with more expansions and record every answer they reach |
 | [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME problems with answers |
 | [`runs/`](runs/) | Saved search trees (17 * 23) and AIME results ([`runs/aime_eval/`](runs/aime_eval/)) |
 | [`serve.py`](serve.py) | Serves the repo for the viewer with caching turned off |
@@ -485,6 +486,43 @@ uv run python eval_aime.py --rescore runs/aime_eval/tree.jsonl # re-apply the ch
 ```
 
 `--model` picks another Tinker model, e.g. `Qwen/Qwen3.5-397B-A17B`.
+
+### Expanding the wrong trees
+
+[`expand_aime.py`](expand_aime.py) grows saved trees: each expansion is one
+call that develops the unexplored proposal with the highest `prob` (the
+log-prob policy captured during generation; `--score depth` for DFS order),
+and new proposals become candidates for the next one.
+
+```bash
+uv run python expand_aime.py --wrong            # every well-formed tree with a wrong answer, 5 expansions each
+uv run python expand_aime.py --id aime2024_62 --n 3
+```
+
+Results for the 6 trees whose format was correct but answer wrong, 5
+expansions each (same model, temperature 0.7):
+
+| Problem | Correct | First answer | Answers in the tree after expanding | Correct answer found | Majority |
+| --- | --- | --- | --- | --- | --- |
+| aime2025_22 | 237 | 59 | 237, 59, 237, 237, 237, 237 | yes | **237** ✓ |
+| aime2024_62 | 371 | 365 | 387, 373, 411, 459, 365, 371 | yes | tie |
+| aime2025_28 | 248 | 3 | 3, 832, 248 | yes | tie |
+| aime2024_63 | 385 | 192 | 192, 96, 192, 96, 24, 96 | no | 96 ✗ |
+| aime2025_10 | 81 | 131 | 131 (nothing to expand) | no | 131 ✗ |
+| aime2025_15 | 735 | 861 | 861 (nothing to expand) | no | 861 ✗ |
+
+- More expansions reach the correct answer in 3 of the 4 trees that had
+  unexplored proposals; a majority vote over the tree's answers fixes 1 of them.
+  Picking the right answer among several needs a better selector (a critic's
+  `value` or a verifier).
+- Two trees are 2-node chains with a single proposal, so there is nothing to
+  expand.
+- The policy often reaches proposals the model gave very low `prob` (0.002-0.03),
+  once the likely ones are explored; two of those branches found the correct answer.
+- 2 of the 20 calls returned no usable node and were skipped.
+
+Files: `runs/aime_eval/trees_expanded/<id>.yaml` (the grown trees) and
+`runs/aime_eval/expansions.jsonl` (answers, majority, and a log of each expansion).
 
 ## Tests
 

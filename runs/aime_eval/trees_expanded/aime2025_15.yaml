@@ -1,0 +1,237 @@
+proposals:
+- title: 'Let $N$ denote the numbers of ordered triples of positive integers $(a, b, c)$ such that $a,
+    b, c \le 3^6$ and $a^3 + b^3 + c^3$ is a multiple of $3^7$. Find the remainder when $N$ is divided
+    by $1000$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9997452158835876
+  logprob: -0.00025481657939963043
+  node:
+    thought: "Let $M = 3^6$. The condition is $a, b, c \\in \\{1, 2, \\dots, M\\}$ and $a^3 + b^3 + c^3\
+      \ \\equiv 0 \\pmod{3^7}$. Let $V_3(n)$ be the exponent of the highest power of 3 dividing $n$. We\
+      \ need to analyze the cubic residues modulo powers of 3.\n  First, recall that for any integer $x$,\
+      \ $x^3 \\equiv 0, 1, -1 \\pmod 9$ is not quite right. Let's look at $x^3 \\pmod{3^k}$.\n  If $3\
+      \ \\nmid x$, then $x^3 \\not\\equiv 0 \\pmod 3$. Specifically, $x^3 \\equiv x \\pmod 3$? No, $1^3=1,\
+      \ 2^3=8\\equiv 2$. So $x^3 \\equiv x \\pmod 3$.\n  Actually, for $p=3$, the map $x \\mapsto x^3$\
+      \ is not a permutation modulo $3^k$ for $k \\ge 2$ in the same way.\n  Let's use the Lifting The\
+      \ Exponent Lemma (LTE) or direct expansion.\n  Let $a = 3^k u$ where $3 \\nmid u$. Then $a^3 = 3^{3k}\
+      \ u^3$.\n  Let $v_3(a) = i, v_3(b) = j, v_3(c) = l$.\n  Then $v_3(a^3) = 3i, v_3(b^3) = 3j, v_3(c^3)\
+      \ = 3l$.\n  For the sum $S = a^3 + b^3 + c^3$ to be divisible by $3^7$, we must have $v_3(S) \\\
+      ge 7$.\n  Let $m = \\min(3i, 3j, 3l)$.\n  Case 1: $3i, 3j, 3l$ are distinct. Then $v_3(S) = \\min(3i,\
+      \ 3j, 3l)$.\n  Case 2: Two are equal and smaller than the third. e.g., $3i = 3j < 3l$. Then $S =\
+      \ 3^{3i}(u^3 + v^3) + 3^{3l}w^3$. The valuation is $3i + v_3(u^3 + v^3)$.\n  Case 3: All three are\
+      \ equal. $3i = 3j = 3l$. Then $S = 3^{3i}(u^3 + v^3 + w^3)$. The valuation is $3i + v_3(u^3 + v^3\
+      \ + w^3)$.\n\n  We need $v_3(S) \\ge 7$.\n  Since $i, j, l$ are integers, $3i, 3j, 3l$ are multiples\
+      \ of 3.\n  Possible values for $\\min(3i, 3j, 3l)$:\n  If min is $3k$, then we need the total valuation\
+      \ $\\ge 7$.\n  \n  Let's analyze the possible sets of exponents $(i, j, l)$ such that $a, b, c \\\
+      le 3^6$.\n  This implies $v_3(a) \\le 6$, so $i, j, l \\in \\{0, 1, 2, 3, 4, 5, 6\\}$.\n  \n  Let's\
+      \ break down by the minimum exponent $k = \\min(i, j, l)$.\n  \n  Subcase 1: The minimum valuation\
+      \ among $a^3, b^3, c^3$ is strictly less than 7, but the sum cancels out higher powers.\n  Wait,\
+      \ if $v_3(a^3) < 7$ and it is the unique minimum, then $v_3(S) = v_3(a^3) < 7$, which fails.\n \
+      \ So, either:\n  A) All $v_3(a^3), v_3(b^3), v_3(c^3) \\ge 7$. This means $3i \\ge 7 \\implies i\
+      \ \\ge 3$ (since $i$ integer, $3i \\ge 9$ if $i=3$, wait. $3(2)=6 < 7$, $3(3)=9 \\ge 7$).\n    \
+      \ So if $i, j, l \\ge 3$, then $a^3, b^3, c^3$ are all divisible by $3^9$, so their sum is divisible\
+      \ by $3^9$, which is divisible by $3^7$.\n     Wait, $a = 3^i u$. If $i=2$, $a^3 = 3^6 u^3$. $v_3(a^3)=6$.\
+      \ If this is the unique min, sum val is 6. Fail.\n     If two are min, say $i=j=2$, then $v_3(a^3+b^3)\
+      \ = 6 + v_3(u^3+v^3)$. We need $6 + v_3(u^3+v^3) \\ge 7 \\implies v_3(u^3+v^3) \\ge 1$.\n     If\
+      \ three are min, $i=j=l=2$, need $6 + v_3(u^3+v^3+w^3) \\ge 7$.\n\n  Let's formalize. Let $k = \\\
+      min(i, j, l)$.\n  The term with the smallest power of 3 dominates the valuation unless there is\
+      \ cancellation.\n  \n  Let $S_3 = u^3 + v^3 + w^3$ where $u,v,w$ are not divisible by 3.\n  \n \
+      \ We iterate over possible values of $k \\in \\{0, 1, 2, 3, 4, 5, 6\\}$.\n  Note that if $k \\ge\
+      \ 3$, then $3k \\ge 9 \\ge 7$. So any triple with $\\min(i,j,l) \\ge 3$ works.\n  \n  If $k < 3$,\
+      \ we need to check cancellation conditions.\n  Specifically:\n  - If exactly one of $i,j,l$ equals\
+      \ $k$, then $v_3(S) = 3k$. We need $3k \\ge 7$. Since $k \\le 2$, $3k \\in \\{0, 3, 6\\}$, none\
+      \ $\\ge 7$. So this subcase yields 0 solutions.\n  - If exactly two of $i,j,l$ equal $k$, say $i=j=k\
+      \ < l$. Then $v_3(S) = 3k + v_3(u^3+v^3)$. We need $3k + v_3(u^3+v^3) \\ge 7$.\n  - If all three\
+      \ equal $k$, $i=j=l=k$. Then $v_3(S) = 3k + v_3(u^3+v^3+w^3)$. We need $3k + v_3(u^3+v^3+w^3) \\\
+      ge 7$.\n\n  Let's analyze $k=0, 1, 2$.\n  \n  **Case $k=0$**: $\\min(i,j,l)=0$.\n  Possible patterns\
+      \ for $(i,j,l)$:\n  1. Two zeros, one $>0$. E.g., $i=j=0, l > 0$.\n     Condition: $v_3(u^3+v^3)\
+      \ \\ge 7 - 0 = 7$.\n     Since $u,v$ are not divisible by 3, $u^3+v^3 \\equiv u+v \\pmod 3$? No.\n\
+      \     $u^3+v^3 = (u+v)(u^2-uv+v^2)$.\n     If $u+v \\equiv 0 \\pmod 3$, let $u+v=3m$.\n     Then\
+      \ $u^2-uv+v^2 = (u+v)^2 - 3uv = 9m^2 - 3uv$.\n     So $u^3+v^3 = 3m(9m^2-3uv) = 9m(3m^2-uv)$.\n\
+      \     $v_3(u^3+v^3) = v_3(3m) + v_3(3m^2-uv) = 1 + v_3(m) + v_3(3m^2-uv)$.\n     Note $uv$ is not\
+      \ divisible by 3. So $3m^2-uv \\equiv -uv \\not\\equiv 0 \\pmod 3$.\n     Thus $v_3(3m^2-uv) = 0$.\n\
+      \     So $v_3(u^3+v^3) = 1 + v_3(m) = 1 + v_3((u+v)/3) = v_3(u+v)$.\n     Wait, is $v_3(u^3+v^3)\
+      \ = v_3(u+v)$ always?\n     LTE for $p=3$: $v_3(u^3+v^3) = v_3(u+v) + v_3(3) = v_3(u+v) + 1$?\n\
+      \     Let's check. $u=1, v=2 \\implies u+v=3, v_3(u+v)=1$. $u^3+v^3=9, v_3(9)=2$. Formula $1+1=2$.\
+      \ Correct.\n     $u=1, v=5 \\implies u+v=6, v_3=1$. $1+125=126=2\\cdot 63=2\\cdot 9\\cdot 7$. $v_3=2$.\
+      \ Correct.\n     $u=4, v=5 \\implies u+v=9, v_3=2$. $64+125=189=27\\cdot 7$. $v_3=3$. Formula $2+1=3$.\
+      \ Correct.\n     So $v_3(u^3+v^3) = v_3(u+v) + 1$.\n     We need $v_3(u^3+v^3) \\ge 7 \\implies\
+      \ v_3(u+v) + 1 \\ge 7 \\implies v_3(u+v) \\ge 6$.\n     So $u+v$ is divisible by $3^6 = 729$.\n\
+      \     Here $u, v$ are units mod $3^L$? No, $a,b$ are just integers $\\le 3^6$.\n     $a = u, b =\
+      \ v$ since $i=j=0$.\n     $1 \\le a, b \\le 3^6$. $3 \\nmid a, 3 \\nmid b$.\n     Condition: $a+b$\
+      \ is a multiple of $3^6$.\n     Since $1 \\le a, b \\le 3^6$, $2 \\le a+b \\le 2\\cdot 3^6$.\n \
+      \    Multiples of $3^6$ in this range: $3^6, 2\\cdot 3^6$.\n     \n     Subcase 1a: $a+b = 3^6$.\n\
+      \     $a$ can be $1, \\dots, 3^6-1$.\n     Constraints: $3 \\nmid a$ and $3 \\nmid b = 3^6 - a$.\n\
+      \     Since $3^6$ is divisible by 3, $b \\equiv -a \\pmod 3$.\n     $3 \\nmid a \\implies a \\not\\\
+      equiv 0 \\pmod 3 \\implies b \\not\\equiv 0 \\pmod 3$.\n     So any $a \\in \\{1, \\dots, 3^6-1\\\
+      }$ with $3 \\nmid a$ works.\n     Number of such $a$: Total integers $1 \\dots 3^6-1$ is $3^6-1$.\n\
+      \     Multiples of 3: $3, 6, \\dots, 3^6-3$. Count is $(3^6-3)/3 = 3^5-1 = 242$.\n     So count\
+      \ is $(3^6-1) - (3^5-1) = 3^6 - 3^5 = 729 - 243 = 486$.\n     Wait, $3^6 = 729$. $3^5 = 243$.\n\
+      \     Count = $729 - 1 - (243 - 1) = 728 - 242 = 486$.\n     Alternatively, total numbers coprime\
+      \ to 3 in $1 \\dots 3^k$ is $3^k (1-1/3) = 2 \\cdot 3^{k-1}$.\n     Here range is $1 \\dots 3^6-1$.\
+      \ The count of numbers not divisible by 3 is $3^6 - 3^5 = 486$.\n     So 486 pairs $(a,b)$.\n  \
+      \   For each pair, $c$ can be any number such that $v_3(c) = l > 0$.\n     $l \\in \\{1, 2, 3, 4,\
+      \ 5, 6\\}$.\n     Also $c \\le 3^6$.\n     Number of choices for $c$ with $v_3(c)=l$:\n     $c =\
+      \ 3^l w$, $1 \\le w \\le 3^{6-l}$, $3 \\nmid w$.\n     Count = $\\phi(3^{6-l})$? No, count of $w\
+      \ \\in \\{1, \\dots, 3^{6-l}\\}$ coprime to 3.\n     Count is $3^{6-l} - 3^{5-l} = 2 \\cdot 3^{5-l}$\
+      \ for $l < 6$.\n     For $l=6$, $c=3^6$, $w=1$, count 1.\n     Let's sum choices for $c$:\n    \
+      \ $l=1: 2 \\cdot 3^4 = 162$.\n     $l=2: 2 \\cdot 3^3 = 54$.\n     $l=3: 2 \\cdot 3^2 = 18$.\n \
+      \    $l=4: 2 \\cdot 3^1 = 6$.\n     $l=5: 2 \\cdot 3^0 = 2$.\n     $l=6: 1$.\n     Sum = $162+54+18+6+2+1\
+      \ = 243$.\n     Note: $243 = 3^5$.\n     So for each of the 486 pairs $(a,b)$, there are 243 choices\
+      \ for $c$.\n     Total for pattern $(0,0, l>0)$ where order is fixed as $a,b$ min:\n     $486 \\\
+      times 243$.\n     There are 3 permutations of indices for \"two zeros, one positive\": $(0,0,l),\
+      \ (0,l,0), (l,0,0)$.\n     So $3 \\times 486 \\times 243$.\n     \n     Subcase 1b: $a+b = 2 \\\
+      cdot 3^6$.\n     $1 \\le a, b \\le 3^6$.\n     $b = 2 \\cdot 3^6 - a$.\n     Since $a \\ge 1$, $b\
+      \ \\le 2 \\cdot 3^6 - 1$. But $b \\le 3^6$.\n     So $2 \\cdot 3^6 - a \\le 3^6 \\implies a \\ge\
+      \ 3^6$.\n     Since $a \\le 3^6$, we must have $a = 3^6$.\n     Then $b = 3^6$.\n     But we require\
+      \ $3 \\nmid a$ and $3 \\nmid b$.\n     $3^6$ is divisible by 3. So this subcase yields 0 solutions.\n\
+      \     \n     So for $k=0$ with two zeros, we have $3 \\times 486 \\times 243$ solutions.\n     $486\
+      \ \\times 243 = 118098$.\n     $3 \\times 118098 = 354294$.\n\n  2. All three $i=j=l=0$.\n     Condition:\
+      \ $v_3(a^3+b^3+c^3) \\ge 7$.\n     $v_3(a^3+b^3+c^3) = v_3(a+b+c) + v_3(\\dots)$? No.\n     If $a+b+c$\
+      \ is not divisible by 3, then $v_3(a^3+b^3+c^3) = 0$.\n     If $a+b+c$ is divisible by 3, let $a+b+c\
+      \ = 3k$.\n     Identity: $a^3+b^3+c^3 - 3abc = (a+b+c)(a^2+b^2+c^2-ab-bc-ca)$.\n     If $3 | (a+b+c)$,\
+      \ then $a \\equiv -b-c \\pmod 3$.\n     $a^2+b^2+c^2-ab-bc-ca \\equiv (-b-c)^2+b^2+c^2-(-b-c)b-bc-c(-b-c)\
+      \ \\pmod 3$?\n     Mod 3: $a \\equiv -b-c$.\n     $a^2 \\equiv b^2+2bc+c^2$.\n     Sum $\\equiv\
+      \ (b^2+2bc+c^2) + b^2 + c^2 - (-b-c)b - bc - c(-b-c)$\n     $= 2b^2+2c^2+2bc + b^2+bc - bc + bc+c^2$?\n\
+      \     Let's just test values.\n     If $a=1, b=1, c=1 \\implies a+b+c=3$. $1+1+1=3$, not div by\
+      \ 9. $v_3=1$.\n     If $a=1, b=1, c=4 \\implies sum=6$. $1+1+64=66$, $v_3(66)=1$.\n     If $a=1,\
+      \ b=2, c=3$ (c not unit).\n     We need $v_3(a^3+b^3+c^3) \\ge 7$.\n     It is known that $v_3(a^3+b^3+c^3)\
+      \ = v_3(a+b+c)$ if $3 | (a+b+c)$?\n     Let's check $v_3(a^3+b^3+c^3)$ vs $v_3(a+b+c)$.\n     Let\
+      \ $a+b+c=3k$.\n     $a^3+b^3+c^3 = 3abc + 3k(a^2+b^2+c^2-ab-bc-ca)$.\n     $v_3(3abc) = 0$ (since\
+      \ $a,b,c$ units).\n     $v_3(3k(\\dots)) = 1 + v_3(k) + v_3(\\dots)$.\n     If $v_3(k) \\ge 1$,\
+      \ i.e., $9 | (a+b+c)$, then the second term has valuation $\\ge 2$.\n     The first term has valuation\
+      \ 0.\n     So sum has valuation 0.\n     Thus, if $3 | (a+b+c)$ but $9 \\nmid (a+b+c)$, then $v_3(a^3+b^3+c^3)\
+      \ = 0$.\n     Wait, earlier example $1,1,1 \\implies sum=3$. $1+1+1=3$. $v_3=1$.\n     My expansion:\
+      \ $3(1) + 3(1)(0) = 3$. $v_3=1$.\n     $v_3(a+b+c)=1$.\n     So $v_3(a^3+b^3+c^3) = v_3(a+b+c)$\
+      \ seems to hold if $v_3(a+b+c) \\ge 1$?\n     Let's check $a=1, b=1, c=1 \\implies v_3(S)=1, v_3(sum)=1$.\n\
+      \     $a=1, b=4, c=7$? No, units.\n     $a=1, b=1, c=1$. Sum=3. $S=3$.\n     $a=1, b=1, c=1+3=4$?\
+      \ No, $a,b,c$ units.\n     Try $a=1, b=1, c=1$.\n     Try $a=1, b=1, c=7$ ($7 \\equiv 1$). Sum=9.\n\
+      \     $1+1+343 = 345$. $345 = 3 \\times 115$. $v_3=1$.\n     $v_3(sum)=2$.\n     So $v_3(S) \\ne\
+      \ v_3(sum)$ in general.\n     \n     Let's use the property:\n     If $a+b+c \\equiv 0 \\pmod 3$,\
+      \ let $a+b+c = 3k$.\n     $a^3+b^3+c^3 = 3abc + (a+b+c)(a^2+b^2+c^2-ab-bc-ca)$.\n     $v_3(3abc)\
+      \ = 0$.\n     So $v_3(a^3+b^3+c^3) = 0$ UNLESS the term $(a+b+c)(\\dots)$ cancels $3abc$ mod higher\
+      \ powers?\n     No, $3abc$ is divisible by 3 but not 9 (since $abc$ unit).\n     So $a^3+b^3+c^3\
+      \ \\equiv 3abc \\pmod 9$?\n     If $a+b+c$ is divisible by 3, say $a=1, b=1, c=1$. $S=3$. $3abc=3$.\
+      \ Match.\n     $v_3(S) = 1$.\n     If $a=1, b=1, c=4$. Sum=6. $S=66$. $v_3(S)=1$.\n     If $a=1,\
+      \ b=4, c=7$ (not unit).\n     If $a=1, b=1, c=1$.\n     It seems if $3 | (a+b+c)$, then $v_3(a^3+b^3+c^3)\
+      \ = 1$?\n     Let's check if it can be higher.\n     We need $a^3+b^3+c^3 \\equiv 0 \\pmod 9$.\n\
+      \     $a^3 \\equiv a \\pmod 9$?\n     $1^3=1, 2^3=8, 4^3=64=1, 5^3=125=8, 7^3=343=1, 8^3=512=8$.\n\
+      \     So $x^3 \\equiv 1$ if $x \\equiv 1,4,7 \\pmod 9$.\n     $x^3 \\equiv 8 \\equiv -1$ if $x \\\
+      equiv 2,5,8 \\pmod 9$.\n     Let $n_1$ be count of $a,b,c \\equiv 1,4,7 \\pmod 9$ (val 1).\n   \
+      \  Let $n_2$ be count of $a,b,c \\equiv 2,5,8 \\pmod 9$ (val -1).\n     $S \\equiv n_1(1) + n_2(-1)\
+      \ \\pmod 9$.\n     We need $S \\equiv 0 \\pmod 9 \\implies n_1 = n_2$.\n     Since $n_1+n_2=3$,\
+      \ this is impossible for integers.\n     So $S$ is never divisible by 9 if $a,b,c$ are units.\n\
+      \     Thus $v_3(a^3+b^3+c^3) = 1$ if $3 | (a+b+c)$?\n     Wait, if $3 \\nmid (a+b+c)$, then $S \\\
+      not\\equiv 0 \\pmod 3$.\n     If $3 | (a+b+c)$, then $S \\equiv 0 \\pmod 3$.\n     But we just showed\
+      \ $S \\not\\equiv 0 \\pmod 9$.\n     So $v_3(S) = 1$.\n     We need $v_3(S) \\ge 7$.\n     So there\
+      \ are NO solutions with $i=j=l=0$.\n\n  **Case $k=1$**: $\\min(i,j,l)=1$.\n  Possible patterns:\n\
+      \  1. Two ones, one $>1$. E.g., $i=j=1, l > 1$.\n     $a=3u, b=3v, c=3^l w$.\n     $a^3+b^3+c^3\
+      \ = 27(u^3+v^3) + 3^{3l}w^3$.\n     $v_3(S) = 3 + v_3(u^3+v^3)$.\n     Need $3 + v_3(u^3+v^3) \\\
+      ge 7 \\implies v_3(u^3+v^3) \\ge 4$.\n     $u,v$ are units.\n     $v_3(u^3+v^3) = v_3(u+v) + 1$.\n\
+      \     So $v_3(u+v) \\ge 3$.\n     $u+v$ divisible by $3^3=27$.\n     $a=3u, b=3v$. $1 \\le a,b \\\
+      le 3^6 \\implies 1 \\le u,v \\le 3^5=243$.\n     $u,v$ units ($3 \\nmid u,v$).\n     Condition:\
+      \ $u+v$ is multiple of 27.\n     $2 \\le u+v \\le 2 \\cdot 243 = 486$.\n     Multiples of 27: $27,\
+      \ 54, \\dots, 486$.\n     $27 \\times 18 = 486$.\n     So $u+v = 27m$ for $m=1, \\dots, 18$.\n \
+      \    \n     For each $m$, count pairs $(u,v)$ with $1 \\le u,v \\le 243$, $3 \\nmid u,v$, $u+v=27m$.\n\
+      \     \n     Subcase 1a: $m < 9$. $27m < 243$.\n     $u$ ranges $1 \\dots 27m-1$.\n     $v = 27m-u$.\n\
+      \     Condition $3 \\nmid u \\implies 3 \\nmid v$ (since $27m$ div by 3).\n     Number of $u \\\
+      in \\{1, \\dots, 27m-1\\}$ not div by 3.\n     Total $27m-1$. Multiples of 3: $(27m-3)/3 = 9m-1$.\n\
+      \     Count = $27m-1 - (9m-1) = 18m$.\n     \n     Subcase 1b: $m=9$. $u+v=243$.\n     $u \\in \\\
+      {1, \\dots, 242\\}$.\n     $v = 243-u$.\n     $3 \\nmid u \\implies 3 \\nmid v$.\n     Count = $18\
+      \ \\times 9 = 162$.\n     (Formula $18m$ gives 162. Is it valid for boundary?\n     $u=243$ not\
+      \ allowed. $u=1 \\dots 242$.\n     Total 242. Div by 3: $240/3=80$.\n     Count $242-80=162$. Yes.)\n\
+      \     \n     Subcase 1c: $m > 9$. $u+v=27m$.\n     $u \\ge 27m-243$.\n     Max $u=243$.\n     Range\
+      \ length $243 - (27m-243) + 1 = 487 - 27m$.\n     Count of non-multiples of 3 in this range.\n \
+      \    Since range length is multiple of 3?\n     $487 - 27m = 487 - \\text{odd} = \\text{even}$?\n\
+      \     Let's just use density.\n     Number of integers $N$. Count coprime to 3 is roughly $2/3 N$.\n\
+      \     Exact count:\n     Let $R = 487-27m$.\n     If $R$ is multiple of 3, count is $2/3 R$.\n \
+      \    $487 \\equiv 1 \\pmod 3$. $27m \\equiv 0$. So $R \\equiv 1$.\n     So count is not exactly\
+      \ $2/3$.\n     Let's sum manually for $m=10, 11, 12, 13, 14, 15, 16, 17, 18$.\n     $m=10: v=270-u$.\
+      \ $u \\ge 27$. Range $27 \\dots 243$.\n     Wait, $u \\le 243$. $v \\le 243 \\implies u \\ge 27$.\n\
+      \     Count $u \\in [27, 243]$ not div by 3.\n     Total $243-27+1 = 217$.\n     Div by 3: $27,\
+      \ \\dots, 243$. Count $(243-27)/3+1 = 77$.\n     Count $217-77=140$.\n     Formula $18m$? $180$.\
+      \ No.\n     \n     Let's generalize.\n     Pairs $(u,v)$ with $u+v=K$, $1 \\le u,v \\le M$, $3 \\\
+      nmid u$.\n     If $K \\le M+1$: Count $2/3 (K-1)$? No, $18m = 2/3 (27m-1)$?\n     $2/3 (27m-1) =\
+      \ 18m - 2/3$. No.\n     Count was $18m$.\n     Total numbers $K-1$. Div by 3: $(K-3)/3 = K/3 - 1$.\n\
+      \     Count $K-1 - K/3 + 1 = 2K/3$.\n     $2(27m)/3 = 18m$. Correct.\n     \n     If $K > M+1$:\n\
+      \     Range for $u$ is $[K-M, M]$.\n     Length $L = 2M - K + 1$.\n     Count of non-multiples of\
+      \ 3.\n     $M=243$. $K=27m$.\n     $L = 486 - 27m + 1 = 487 - 27m$.\n     We need count of $u \\\
+      in [27m-243, 243]$ not div by 3.\n     Let's compute for each $m$.\n     $m=10: K=270$. $u \\in\
+      \ [27, 243]$. Count 140.\n     $m=11: K=297$. $u \\in [54, 243]$.\n     Total $243-54+1=190$.\n\
+      \     Div by 3: $54, \\dots, 243$. Count $(243-54)/3+1 = 64$.\n     Count $190-64=126$.\n     $m=12:\
+      \ K=324$. $u \\in [81, 243]$.\n     Total $243-81+1=163$.\n     Div by 3: $81, \\dots, 243$. Count\
+      \ $(243-81)/3+1 = 55$.\n     Count $163-55=108$.\n     $m=13: K=351$. $u \\in [108, 243]$.\n   \
+      \  Total $136$. Div 3: $108, \\dots, 243$. Count $(243-108)/3+1 = 46$.\n     Count $136-46=90$.\n\
+      \     $m=14: K=378$. $u \\in [135, 243]$.\n     Total $109$. Div 3: $135, \\dots, 243$. Count $(243-135)/3+1\
+      \ = 37$.\n     Count $109-37=72$.\n     $m=15: K=405$. $u \\in [162, 243]$.\n     Total $82$. Div\
+      \ 3: $162, \\dots, 243$. Count $(243-162)/3+1 = 28$.\n     Count $82-28=54$.\n     $m=16: K=432$.\
+      \ $u \\in [189, 243]$.\n     Total $55$. Div 3: $189, \\dots, 243$. Count $(243-189)/3+1 = 19$.\n\
+      \     Count $55-19=36$.\n     $m=17: K=459$. $u \\in [216, 243]$.\n     Total $28$. Div 3: $216,\
+      \ \\dots, 243$. Count $(243-216)/3+1 = 10$.\n     Count $28-10=18$.\n     $m=18: K=486$. $u \\in\
+      \ [243, 243]$.\n     $u=243$ is div by 3. Count 0.\n     \n     Sum for $m=1 \\dots 18$:\n     $m=1\
+      \ \\dots 9$: $\\sum_{m=1}^9 18m = 18 \\frac{9 \\cdot 10}{2} = 18 \\cdot 45 = 810$.\n     $m=10 \\\
+      dots 18$: $140+126+108+90+72+54+36+18+0$.\n     This is arithmetic progression?\n     $140, 126$\
+      \ diff -14.\n     $126, 108$ diff -18.\n     $108, 90$ diff -18.\n     $90, 72$ diff -18.\n    \
+      \ $72, 54$ diff -18.\n     $54, 36$ diff -18.\n     $36, 18$ diff -18.\n     $18, 0$ diff -18.\n\
+      \     So sum = $140 + (126+108+90+72+54+36+18)$.\n     Sum of AP: $7/2 (126+18) = 3.5 (144) = 504$.\n\
+      \     Total = $140 + 504 = 644$.\n     Total pairs $(u,v)$ for $i=j=1, l>1$ is $810 + 644 = 1454$.\n\
+      \     \n     Now multiply by choices for $c$.\n     $c = 3^l w$, $l \\in \\{2, 3, 4, 5, 6\\}$.\n\
+      \     Sum of choices for $c$:\n     $l=2: 54$.\n     $l=3: 18$.\n     $l=4: 6$.\n     $l=5: 2$.\n\
+      \     $l=6: 1$.\n     Sum = $54+18+6+2+1 = 81$.\n     \n     Total for pattern $(1,1,l>1)$: $1454\
+      \ \\times 81$.\n     $1454 \\times 81 = 117774$.\n     There are 3 permutations.\n     $3 \\times\
+      \ 117774 = 353322$.\n\n  2. All three $i=j=l=1$.\n     $a=3u, b=3v, c=3w$.\n     $a^3+b^3+c^3 =\
+      \ 27(u^3+v^3+w^3)$.\n     Need $v_3(u^3+v^3+w^3) \\ge 7-3=4$.\n     $u,v,w$ units, $1 \\le u,v,w\
+      \ \\le 3^5=243$.\n     Similar to $k=0$ case for $u,v,w$.\n     We established $v_3(u^3+v^3+w^3)\
+      \ = 1$ if $3|(u+v+w)$ and 0 otherwise.\n     Need $1 \\ge 4$. Impossible.\n     So 0 solutions.\n\
+      \n  **Case $k=2$**: $\\min(i,j,l)=2$.\n  1. Two twos, one $>2$. E.g., $i=j=2, l > 2$.\n     $a=9u,\
+      \ b=9v$.\n     $v_3(a^3+b^3) = 6 + v_3(u^3+v^3) = 6 + v_3(u+v) + 1 = 7 + v_3(u+v)$.\n     Need $7\
+      \ + v_3(u+v) + v_3(3^{3l-6}w^3 \\dots)$?\n     $S = 729(u^3+v^3) + 3^{3l}w^3$.\n     $v_3(729(u^3+v^3))\
+      \ = 6 + v_3(u^3+v^3) = 7 + v_3(u+v)$.\n     If $v_3(u+v) \\ge 1$, then $v_3(\\text{first part})\
+      \ \\ge 8$.\n     If $v_3(u+v)=0$, $v_3(\\text{first part}) = 7$.\n     Second part $v_3(3^{3l}w^3)\
+      \ = 3l \\ge 3(3)=9$.\n     So $v_3(S) = \\min(7+v_3(u+v), 3l)$.\n     Since $3l \\ge 9$, we need\
+      \ $7+v_3(u+v) \\ge 7$.\n     This is always true since $v_3(u+v) \\ge 0$.\n     So ANY $u,v$ work?\n\
+      \     Wait, if $v_3(u+v)=0$, min is 7. OK.\n     So we need NO cancellation to reduce valuation?\n\
+      \     Since second term has valuation $\\ge 9$, it does not affect the sum's valuation if first\
+      \ term is 7 or 8.\n     So condition is just $u,v$ units.\n     $a=9u, b=9v$. $1 \\le a,b \\le 3^6\
+      \ \\implies 1 \\le u,v \\le 3^4=81$.\n     Number of choices for $u$: $\\phi(81)$? No, count of\
+      \ $u \\in \\{1, \\dots, 81\\}$ not div by 3.\n     Count = $81 - 27 = 54$.\n     Same for $v$.\n\
+      \     Total pairs $(u,v) = 54 \\times 54 = 2916$.\n     \n     Choices for $c$: $l \\in \\{3, 4,\
+      \ 5, 6\\}$.\n     Sum of choices:\n     $l=3: 18$.\n     $l=4: 6$.\n     $l=5: 2$.\n     $l=6: 1$.\n\
+      \     Sum = $27$.\n     \n     Total for pattern $(2,2,l>2)$: $2916 \\times 27 = 78732$.\n     3\
+      \ permutations.\n     $3 \\times 78732 = 236196$.\n\n  2. All three $i=j=l=2$.\n     $S = 729(u^3+v^3+w^3)$.\n\
+      \     Need $v_3(u^3+v^3+w^3) \\ge 1$.\n     This requires $3 | (u+v+w)$.\n     $u,v,w$ units, $1\
+      \ \\le u,v,w \\le 81$.\n     Count triples $(u,v,w)$ with $3 \\nmid u,v,w$ and $u+v+w \\equiv 0\
+      \ \\pmod 3$.\n     Total units in $1 \\dots 81$: $54$.\n     Residues mod 3:\n     $1 \\dots 81$.\
+      \ $81/3 = 27$ of each residue.\n     But $3 \\nmid u$.\n     $u \\equiv 1 \\pmod 3$: $27$ values?\n\
+      \     $1, 4, \\dots, 79$. Count $(79-1)/3+1 = 27$.\n     $u \\equiv 2 \\pmod 3$: $2, 5, \\dots,\
+      \ 80$. Count 27.\n     So 27 ones, 27 twos.\n     Let $n_1, n_2$ be count of 1s and 2s in $u,v,w$.\n\
+      \     Sum $\\equiv n_1 + 2n_2 \\equiv 0 \\pmod 3$.\n     $n_1 + 2n_2 \\equiv n_1 - n_2 \\equiv 0\
+      \ \\implies n_1 \\equiv n_2 \\pmod 3$.\n     Possible $(n_1, n_2)$ for $n_1+n_2=3$:\n     $(3,0)\
+      \ \\implies 3-0=3 \\equiv 0$. OK.\n     $(0,3) \\implies 0-3=-3 \\equiv 0$. OK.\n     $(1,2) \\\
+      implies 1-2=-1 \\not\\equiv 0$.\n     $(2,1) \\implies 2-1=1 \\not\\equiv 0$.\n     \n     Case\
+      \ $(3,0)$: All three $\\equiv 1$.\n     $27^3$ choices.\n     Case $(0,3)$: All three $\\equiv 2$.\n\
+      \     $27^3$ choices.\n     Total valid triples = $2 \\cdot 27^3 = 2 \\cdot 19683 = 39366$.\n  \
+      \   \n     Total for pattern $(2,2,2)$: $39366$.\n\n  **Case $k \\ge 3$**:\n  $i,j,l \\ge 3$.\n\
+      \  $a^3$ div by $3^9$. Sum div by $3^9$.\n  Any such triple works.\n  Number of choices for each\
+      \ variable:\n  $i \\in \\{3, 4, 5, 6\\}$.\n  Sum of counts for $i=3,4,5,6$:\n  $i=3: 18$.\n  $i=4:\
+      \ 6$.\n  $i=5: 2$.\n  $i=6: 1$.\n  Sum = 27.\n  Total triples = $27^3 = 19683$.\n\n  **Total N**:\n\
+      \  Sum all cases:\n  $k=0, 2 \\text{ zeros}$: $354294$.\n  $k=1, 2 \\text{ ones}$: $353322$.\n \
+      \ $k=2, 2 \\text{ twos}$: $236196$.\n  $k=2, 3 \\text{ twos}$: $39366$.\n  $k \\ge 3$: $19683$.\n\
+      \  \n  Sum = $354294 + 353322 + 236196 + 39366 + 19683$.\n  $354294 + 353322 = 707616$.\n  $236196\
+      \ + 39366 = 275562$.\n  $707616 + 275562 = 983178$.\n  $983178 + 19683 = 1002861$.\n  \n  $N = 1002861$.\n\
+      \  $N \\pmod{1000} = 861$."
+    proposals:
+    - title: Calculate N mod 1000
+      prob: 0.9996935581914284
+      logprob: -0.0003064887714572251
+      node:
+        thought: 'N = 1002861.
+
+          1002861 = 1002 * 1000 + 861.
+
+          Remainder is 861.
+
+          <answer>861</answer>'
+        answer: true
