@@ -1,0 +1,28 @@
+== cot
+   format correct:              60/60 = 100.0%
+   format correct AND right:    45/60 = 75.0%
+     AIME 2024: format 30/30, correct 23/30
+     AIME 2025: format 30/30, correct 22/30
+   format checks passed:
+     answer_is_integer          60/60
+     one_answer_tag             60/60
+   cut off (no clean stop): 0
+   call errors: 0
+   output tokens: mean 4784, max 10029
+
+== tree
+   format correct:              42/60 = 70.0%
+   format correct AND right:    36/60 = 60.0%
+     AIME 2024: format 21/30, correct 19/30
+     AIME 2025: format 21/30, correct 17/30
+   format checks passed:
+     answer_element             44/60
+     answer_is_integer          42/60
+     branching                  12/60  (info, not required)
+     final_is_answer            48/60
+     only_nodes                 56/60
+     trace_closed               59/60
+     valid_chain                52/60
+   cut off (no clean stop): 0
+   call errors: 0
+   output tokens: mean 5308, max 11344

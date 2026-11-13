@@ -1,0 +1,26 @@
+proposals:
+- title: 'Eight circles of radius $34$ are sequentially tangent, and two of the circles are tangent to
+    $AB$ and $BC$ of triangle $ABC$, respectively. $2024$ circles of radius $1$ can be arranged in the
+    same manner. The inradius of triangle $ABC$ can be expressed as $\frac{m}{n}$, where $m$ and $n$ are
+    relatively prime positive integers. Find $m+n$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9999115408410084
+  logprob: -8.846307173371315e-05
+  node:
+    thought: "Let's understand the geometry. We have a sequence of $k$ circles tangent to each other sequentially,\
+      \ lying along the angle bisector of angle $B$ (since they are tangent to $AB$ and $BC$ at the ends?\
+      \ No, the problem says \"two of the circles are tangent to $AB$ and $BC$\". Let's re-read carefully.\
+      \ \"Eight circles... sequentially tangent... two of the circles are tangent to $AB$ and $BC$\".\
+      \ This usually implies a chain of circles inscribed in the angle $ABC$, tangent to the sides. The\
+      \ first circle is tangent to $AB$, the last is tangent to $BC$, and all adjacent circles are tangent\
+      \ to each other. The centers of these circles lie on the angle bisector of $B$.\n  Let $\\theta\
+      \ = \\angle B / 2$. The distance from vertex $B$ to the center of the $i$-th circle is $d_i = r_i\
+      \ / \\sin \\theta$.\n  Since the circles are sequentially tangent, the distance between centers\
+      \ $i$ and $i+1$ is $r_i + r_{i+1}$.\n  Also $d_{i+1} - d_i = r_i + r_{i+1}$.\n  This gives a recurrence\
+      \ for the radii."
+    proposals:
+    - title: Derive the relationship between the radii of consecutive circles in such a chain.
+    - title: Analyze the specific case where all radii are equal.
+    - title: Check if the problem implies equal radii for the chain.

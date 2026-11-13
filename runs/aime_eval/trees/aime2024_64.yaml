@@ -1,0 +1,599 @@
+proposals:
+- title: 'Let $p$ be the least prime number for which there exists a positive integer $n$ such that $n^{4}+1$
+    is divisible by $p^{2}$. Find the least positive integer $m$ such that $m^{4}+1$ is divisible by $p^{2}$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9997310244987314
+  logprob: -0.0002690116816665977
+  node:
+    thought: To find the least prime $p$ such that $p^2 \mid n^4+1$ for some integer $n$, we first need
+      to understand the condition for a prime $p$ to divide $n^4+1$. If $p \mid n^4+1$, then $n^4 \equiv
+      -1 \pmod p$. This implies that the order of $n$ modulo $p$ is 8, so $8 \mid p-1$. Thus, $p \equiv
+      1 \pmod 8$. The smallest primes congruent to 1 mod 8 are 17, 41, 73, etc. We must check if $p^2$
+      divides $n^4+1$ for these primes.
+    proposals:
+    - title: Check if $p=17$ works.
+      prob: 0.797981812289162
+      logprob: -0.2256694734096527
+      node:
+        thought: 'Let''s verify the condition $p \equiv 1 \pmod 8$. If $p=2$, $n^4+1$ is odd, so not divisible
+          by 4. If $p \equiv 3, 5, 7 \pmod 8$, then $-1$ is not a quartic residue modulo $p$, or the order
+          argument fails. Specifically, $x^4 \equiv -1 \pmod p$ has a solution iff $p \equiv 1 \pmod 8$.
+          So we start checking primes $p \equiv 1 \pmod 8$. The first one is $p=17$.
+
+          We need to check if there exists $n$ such that $17^2 \mid n^4+1$, i.e., $289 \mid n^4+1$.
+
+          First, find $n$ such that $n^4 \equiv -1 \pmod{17}$.
+
+          The squares modulo 17 are $1, 4, 9, 16, 8, 2, 15, 13$.
+
+          $4^2 = 16 \equiv -1$. So $n^2 \equiv 4$ or $n^2 \equiv -4 \equiv 13$? No, we need $n^4 \equiv
+          -1$.
+
+          Let''s check powers of 2: $2^4 = 16 \equiv -1 \pmod{17}$. So $n=2$ is a solution modulo 17.
+
+          Now we lift this solution to modulo $17^2 = 289$ using Hensel''s Lemma.
+
+          Let $f(x) = x^4+1$. We have $f(2) = 17$. $f''(x) = 4x^3$. $f''(2) = 4(8) = 32$.
+
+          Since $f(2) = 17$ is divisible by $17$ but not $17^2$, and $f''(2) = 32$ is not divisible by
+          $17$ (gcd(32,17)=1), there is a unique lift modulo $17^2$.
+
+          The lift is $n_1 = n_0 - f(n_0) \cdot (f''(n_0))^{-1} \pmod{17^2}$.
+
+          Here $n_0 = 2$, $f(2) = 17$, $f''(2) = 32$.
+
+          We need $32^{-1} \pmod{289}$.
+
+          $32 x \equiv 1 \pmod{289}$.
+
+          $289 = 9 \cdot 32 + 1$.
+
+          So $1 = 289 - 9 \cdot 32$.
+
+          Thus $-9 \cdot 32 \equiv 1 \pmod{289}$.
+
+          So $32^{-1} \equiv -9 \equiv 280 \pmod{289}$.
+
+          $n_1 = 2 - 17 \cdot (-9) = 2 + 153 = 155$.
+
+          Let''s check: $155^4 + 1 \pmod{289}$.
+
+          $155 \equiv -134 \pmod{289}$? No, $155$ is just $155$.
+
+          $155 = 2 + 153 = 2 + 9 \cdot 17$.
+
+          $(2+153)^4 \approx 2^4 + 4 \cdot 2^3 \cdot 153 = 16 + 128 \cdot 153$.
+
+          $128 \cdot 153 = 128(17 \cdot 9) = 1152 \cdot 9$.
+
+          $1152 = 4 \cdot 289 - 4$. So $1152 \equiv -4 \pmod{289}$.
+
+          $128 \cdot 153 \equiv -4 \cdot 9 = -36 \pmod{289}$.
+
+          So $(2+153)^4 \equiv 16 - 36 = -20 \pmod{289}$.
+
+          Wait, Hensel''s lemma guarantees $f(n_1) \equiv 0 \pmod{p^2}$. Let me re-calculate carefully.
+
+          $f(2) = 17$.
+
+          $f''(2) = 32$.
+
+          Inverse of 32 mod 289.
+
+          $32 \times 9 = 288 \equiv -1$. So $32 \times (-9) \equiv 1$. Inverse is $-9 \equiv 280$.
+
+          $n_1 = 2 - 17 \cdot 280$.
+
+          $17 \cdot 280 = 17(289-9) = 17 \cdot 289 - 153 \equiv -153 \pmod{289}$.
+
+          $n_1 = 2 - (-153) = 155$.
+
+          Let''s check $155^4 + 1 \pmod{289}$.
+
+          $155^2 = 24025$.
+
+          $24025 / 289$: $289 \times 80 = 23120$. $24025 - 23120 = 905$.
+
+          $289 \times 3 = 867$. $905 - 867 = 38$.
+
+          So $155^2 \equiv 38 \pmod{289}$.
+
+          $155^4 \equiv 38^2 = 1444$.
+
+          $1444 / 289$: $289 \times 5 = 1445$.
+
+          $1444 \equiv -1 \pmod{289}$.
+
+          So $155^4 + 1 \equiv 0 \pmod{289}$.
+
+          Thus $p=17$ is a candidate. Since 17 is the smallest prime with $p \equiv 1 \pmod 8$, and no
+          smaller prime can satisfy $n^4 \equiv -1 \pmod p$, $p=17$ is the least prime.'
+        proposals:
+        - title: Confirm p=17 is the least prime.
+          prob: 0.9145286701644679
+          logprob: -0.08934646099805832
+          node:
+            thought: 'We established $p=17$. The solutions to $n^4 \equiv -1 \pmod{289}$ are derived from
+              the roots of $x^4+1$ mod 289.
+
+              We found one root $n \equiv 155 \pmod{289}$.
+
+              The other roots will be related to $155$ by symmetries.
+
+              If $n$ is a root, then $-n$ is a root. Also, if $\omega$ is a primitive 8th root of unity,
+              others are $\omega n$.
+
+              Modulo 289, the roots of $x^4+1=0$ are $n, -n, n'', -n''$ where $n''$ corresponds to the
+              other square root of -1 lifted.
+
+              Wait, $x^4+1$ factors into two quadratics or four linears?
+
+              $x^4+1 = (x^2+i)(x^2-i)$ over complex numbers. Modulo $p$, if $-1$ is a quadratic residue,
+              let $i^2 \equiv -1$. Then $x^4+1 = (x^2-i)(x^2+i)$.
+
+              Since $4^2 = 16 \equiv -1 \pmod{17}$, let $i \equiv 4$.
+
+              Then we solve $x^2 \equiv 4 \pmod{289}$ and $x^2 \equiv -4 \equiv 285 \pmod{289}$.
+
+              Case 1: $x^2 \equiv 4 \pmod{289}$.
+
+              Solutions are $x \equiv 2$ and $x \equiv -2 \equiv 287$.
+
+              Check: $2^4+1 = 17$, not div by 289. $287^4+1$ same.
+
+              Wait, my Hensel lift was for $n^4 \equiv -1$.
+
+              The equation $n^4 \equiv -1$ is not $n^2 \equiv \pm i$.
+
+              Let''s re-evaluate.
+
+              $n^4 \equiv -1 \pmod{289}$.
+
+              We found $n=155$ is a solution.
+
+              $155^2 \equiv 38$. $38^2 \equiv -1$.
+
+              So $155$ is a square root of a square root of -1.
+
+              The roots of $x^4+1=0$ are $\pm 155$ and $\pm k$ where $k$ is another root.
+
+              Since $155^2 = 38$, and $38$ is not $\pm 2$ or $\pm 287$ (which square to 4), the other
+              roots come from $x^2 \equiv -38 \equiv 251$.
+
+              Let''s find $\sqrt{251} \pmod{289}$.
+
+              We know $155$ is a root. The other roots are $-155 \equiv 134$.
+
+              Are there other pairs?
+
+              $x^4+1$ has 4 roots mod $p$ if $p \equiv 1 \pmod 8$.
+
+              Lifting to $p^2$, each root lifts uniquely.
+
+              So there are 4 solutions modulo 289.
+
+              We found $n_1 = 155$.
+
+              $n_2 = -155 \equiv 134$.
+
+              Let''s find the other two.
+
+              They correspond to the other choice of "square root of -1" mod 17.
+
+              Mod 17, roots of $x^4+1$ are $2, 8, 9, 15$.
+
+              $2^2=4, 8^2=64=13=-4, 9^2=81=13=-4, 15^2=225=4=-13$? No $15=-2, (-2)^2=4$.
+
+              So the squares are 4 and 13.
+
+              We lifted the solution for $n^2 \equiv 4$? No, $n^4 \equiv -1$.
+
+              If $n^2 \equiv 4$, $n^4 \equiv 16 \equiv -1$. Correct.
+
+              If $n^2 \equiv 13$, $n^4 \equiv 169 = 10 \cdot 17 - 1 \equiv -1$. Correct.
+
+              So we need to lift solutions to $x^2 \equiv 4$ and $x^2 \equiv 13$.
+
+              For $x^2 \equiv 4 \pmod{17}$, solutions are $\pm 2$.
+
+              Lift $x^2=4$ to mod 289.
+
+              $x=2$. $2^2=4$. So $x=2$ is a solution.
+
+              $x=-2=287$ is a solution.
+
+              These give $m=2, 287$.
+
+              But $2^4+1 = 17$, not divisible by 289.
+
+              Why? Because Hensel''s lemma for $g(x)=x^2-4$ gives unique lifts.
+
+              $g(2)=0$, $g''(2)=4 \not\equiv 0$.
+
+              So $x=2$ is the unique lift of 2 to mod 289 for the equation $x^2=4$.
+
+              So $2^2=4 \implies 2^4=16 \neq -1 \pmod{289}$.
+
+              Ah, the condition is $n^4 \equiv -1$.
+
+              If $n=2$, $n^4=16$. $16 \not\equiv -1 \pmod{289}$.
+
+              So $n=2$ is NOT a solution to $n^4 \equiv -1 \pmod{289}$.
+
+              My previous Hensel application was on $f(n)=n^4+1$.
+
+              $f(2)=17$. $f''(2)=32$.
+
+              $n_1 = 155$.
+
+              $155^2 = 24025 = 83 \cdot 289 + 38$.
+
+              $155^4 \equiv 38^2 = 1444 = 5 \cdot 289 - 1 \equiv -1$.
+
+              So 155 is a solution.
+
+              What about the roots coming from $n^2 \equiv 13 \pmod{17}$?
+
+              $13 \equiv -4$.
+
+              Let $y$ be a root of $x^2 \equiv 13 \pmod{17}$. $8^2 = 64 = 3 \cdot 17 + 13$. So $y=8$.
+
+              Lift $x^2 \equiv 13 \pmod{289}$.
+
+              Start with $x_0 = 8$.
+
+              $x_1 = 8 - \frac{8^2-13}{2 \cdot 8} = 8 - \frac{64-13}{16} = 8 - \frac{51}{16}$.
+
+              We need inverse of 16 mod 289.
+
+              $16 \cdot 18 = 288 \equiv -1$. So $16^{-1} \equiv -18 \equiv 271$.
+
+              $\frac{51}{16} = 51 \cdot 271$.
+
+              $51 \cdot 271 = 13821$.
+
+              $13821 / 289$: $289 \cdot 40 = 11560$. $13821-11560 = 2261$.
+
+              $289 \cdot 7 = 2023$. $2261-2023 = 238$.
+
+              $238 = 289 - 51$. So $13821 \equiv -51 \pmod{289}$?
+
+              Let''s check $51 \cdot 271 = 51(-18) = -918$.
+
+              $918 = 3 \cdot 289 + 51$. So $-918 \equiv -51 \equiv 238$.
+
+              So term is 238.
+
+              $x_1 = 8 - 238 = -230 \equiv 59 \pmod{289}$.
+
+              Check $59^2 = 3481$.
+
+              $3481 / 289$: $289 \cdot 10 = 2890$. $3481-2890 = 591$.
+
+              $289 \cdot 2 = 578$. $591-578 = 13$.
+
+              So $59^2 \equiv 13 \pmod{289}$.
+
+              Then $59^4 \equiv 13^2 = 169$.
+
+              $169 \not\equiv -1 \pmod{289}$. ($169+1=170$, not div by 289).
+
+              Wait. If $n^2 \equiv 13$, then $n^4 \equiv 169$.
+
+              We need $n^4 \equiv -1$.
+
+              So we need $13 \equiv -1$? No.
+
+              The roots of $x^4+1$ satisfy $x^2 = \pm \sqrt{-1}$.
+
+              Mod 17, $\sqrt{-1} = \pm 4$.
+
+              So $x^2 \equiv 4$ or $x^2 \equiv -4 \equiv 13$.
+
+              If $x^2 \equiv 4$, $x^4 \equiv 16 \equiv -1$.
+
+              If $x^2 \equiv 13$, $x^4 \equiv 169 \equiv 10 \cdot 17 - 1 \equiv -1$.
+
+              So BOTH sets of roots work mod 17.
+
+              But mod 289, we need $n^4 \equiv -1$.
+
+              For the branch $x^2 \equiv 4$, we found $n=2$. $2^4=16 \neq -1$.
+
+              For the branch $x^2 \equiv 13$, we found $n=59$. $59^4=169 \neq -1$.
+
+              Where did I go wrong?
+
+              I used Hensel on $f(n)=n^4+1$.
+
+              $f(2)=17$. $f''(2)=32$. Lift gave 155.
+
+              $155^2 = 38$. $38 \neq 4$.
+
+              So 155 does NOT satisfy $n^2 \equiv 4$.
+
+              It satisfies $n^2 \equiv 38$.
+
+              $38^2 = 1444 \equiv -1$.
+
+              So the roots of $n^4+1 \equiv 0$ are NOT lifts of roots of $n^2 \equiv \pm 4$.
+
+              They are lifts of roots of $n^4 \equiv -1$.
+
+              The equation $n^4+1=0$ has 4 roots.
+
+              We found one: 155.
+
+              $n_2 = -155 = 134$.
+
+              Let''s find the other two.
+
+              They come from the other root mod 17?
+
+              Roots mod 17: 2, 8, 9, 15.
+
+              2 and 15 = -2.
+
+              8 and 9 = -8.
+
+              We lifted 2 to 155.
+
+              Let''s lift 15 (-2).
+
+              $n_0 = 15$. $f(15) = 15^4+1 = 50626$.
+
+              $50626 / 17 = 2978$. $2978 / 17 = 175.17$?
+
+              $17^2 = 289$.
+
+              $15 \equiv -2$. $15^4 = (-2)^4 = 16 = 17-1$.
+
+              $f(15) = 17$.
+
+              $f''(15) = 4(15)^3 = 4(-2)^3 = -32 \equiv 257 \pmod{289}$?
+
+              $f''(15) = -32$.
+
+              Inverse of -32 is $-280 \equiv 9$.
+
+              $n_1 = 15 - 17(9) = 15 - 153 = -138 \equiv 151$.
+
+              Check $151^2$. $151 = -138$.
+
+              $138^2 = 19044$.
+
+              $19044 / 289$: $289 \cdot 60 = 17340$. $19044-17340 = 1704$.
+
+              $289 \cdot 5 = 1445$. $1704-1445 = 259$.
+
+              $259 = -30$.
+
+              So $151^2 \equiv -30$?
+
+              Wait, $155^2 = 38$. $151 = -138$.
+
+              $138^2 = 19044$. $38 \cdot ?$
+
+              Let''s check $151^4$.
+
+              If 155 is a root, $-155=134$ is a root.
+
+              $151$ is not $134$.
+
+              $151 \equiv -138$.
+
+              $134 \equiv -155$.
+
+              Are 151 and 134 related?
+
+              $151+134 = 285 \neq 0$.
+
+              Let''s check $151^4+1$.
+
+              $f(15) = 17$.
+
+              $n_1 = 15 - 17 \cdot (-32)^{-1}$.
+
+              $(-32)^{-1} = -280 = 9$.
+
+              $n_1 = 15 - 153 = -138 = 151$.
+
+              $151^2 = 22801$.
+
+              $22801 / 289$: $289 \cdot 70 = 20230$. $22801-20230 = 2571$.
+
+              $289 \cdot 8 = 2312$. $2571-2312 = 259$.
+
+              $259 \equiv -30$.
+
+              $151^4 \equiv (-30)^2 = 900$.
+
+              $900 = 3 \cdot 289 + 33$.
+
+              $33 \neq -1$.
+
+              Error in Hensel calculation?
+
+              $f(15) = 50626$.
+
+              $50626 / 289 = 175.17$.
+
+              $17 \cdot 2978 = 50626$.
+
+              $2978 = 10 \cdot 289 + 88$.
+
+              So $f(15) = 17(2890 + 88)$? No.
+
+              $f(15) = 17 \cdot 2978$.
+
+              $2978 \pmod{17}$. $2978 = 175 \cdot 17 + 3$.
+
+              So $f(15) \equiv 17 \cdot 3 = 51 \pmod{289}$?
+
+              No, $f(15) = 15^4+1$.
+
+              $15 \equiv -2$.
+
+              $(-2)^4+1 = 17$.
+
+              So $f(15) = 17 + 289 k$.
+
+              $15^4 = 50625$.
+
+              $50625 / 289 = 175.17$.
+
+              $289 \cdot 175 = 50575$.
+
+              $50625 - 50575 = 50$.
+
+              So $f(15) = 50626 = 50575 + 51 = 175 \cdot 289 + 51$.
+
+              So $f(15) \equiv 51 \pmod{289}$.
+
+              Hensel steps requires $f(n_0) \equiv 0 \pmod p$.
+
+              $f(15) = 51$, which is $3 \cdot 17$. Divisible by 17.
+
+              $f''(15) = -32$.
+
+              $n_1 = 15 - \frac{51}{-32}$.
+
+              $\frac{51}{-32} = 51 \cdot (-280) = -14280$.
+
+              $14280 / 289 = 49.41$.
+
+              $289 \cdot 49 = 14161$.
+
+              $14280 - 14161 = 119$.
+
+              So term is $-119$.
+
+              $n_1 = 15 - (-119) = 134$.
+
+              So the lift of 15 is 134.
+
+              $134 = -155$.
+
+              So the roots from $\pm 2$ are $\pm 155$.
+
+              Now lift 8 and 9.
+
+              $8^2 = 64$. $8^4 = 4096$.
+
+              $4096+1 = 4097$.
+
+              $4097 / 17 = 241$.
+
+              $241 = 14 \cdot 17 + 3$.
+
+              $f(8) = 17 \cdot 241 = 4097$.
+
+              $4097 = 14 \cdot 289 + 51$.
+
+              $f(8) \equiv 51 \pmod{289}$.
+
+              $f''(8) = 4(512) = 2048$.
+
+              $2048 / 289 = 7.08$.
+
+              $289 \cdot 7 = 2023$.
+
+              $2048 - 2023 = 25 \equiv -289+25$? No.
+
+              $2048 \equiv 25 \pmod{289}$.
+
+              Inverse of 25?
+
+              $25 x \equiv 1$.
+
+              $289 = 11 \cdot 25 + 14$.
+
+              $25 = 1 \cdot 14 + 11$.
+
+              $14 = 1 \cdot 11 + 3$.
+
+              $11 = 3 \cdot 3 + 2$.
+
+              $3 = 1 \cdot 2 + 1$.
+
+              Back sub:
+
+              $1 = 3-2 = 3-(11-3\cdot3) = 4\cdot3-11 = 4(14-11)-11 = 4\cdot14-5\cdot11 = 4\cdot14-5(25-14)
+              = 9\cdot14-5\cdot25 = 9(289-11\cdot25)-5\cdot25 = 9\cdot289 - 104\cdot25$.
+
+              So $25^{-1} \equiv -104 \equiv 185 \pmod{289}$.
+
+              Term: $\frac{51}{25} = 51 \cdot 185 = 9435$.
+
+              $9435 / 289 = 32.64$.
+
+              $289 \cdot 32 = 9248$.
+
+              $9435 - 9248 = 187$.
+
+              $n_1 = 8 - 187 = -179 \equiv 110$.
+
+              Check $110^4+1$.
+
+              $110^2 = 12100$.
+
+              $12100 / 289 = 41.86$.
+
+              $289 \cdot 41 = 11849$.
+
+              $12100 - 11849 = 251$.
+
+              $110^4 \equiv 251^2 = 63001$.
+
+              $63001 / 289 = 217.99$.
+
+              $289 \cdot 218 = 63002$.
+
+              $63001 \equiv -1$.
+
+              So 110 is a root.
+
+              Other root: $-110 \equiv 179$.
+
+              So the four roots are $155, 134, 110, 179$.
+
+              We want the least positive integer $m$.
+
+              $110 < 134 < 155 < 179$.
+
+              So $m=110$.'
+            proposals:
+            - title: Verify 110 is the smallest.
+              prob: 0.9839297936029461
+              logprob: -0.016200732439756393
+              node:
+                thought: 'The roots are 110, 134, 155, 179.
+
+                  The least positive integer is 110.
+
+                  Check if there are smaller positive integers?
+
+                  The roots are unique mod 289.
+
+                  So the smallest positive representative is 110.'
+                proposals:
+                - title: Final Answer is 110.
+                  prob: 0.9994904174436828
+                  logprob: -0.000509712437633425
+                  node:
+                    thought: '110 is the least positive integer.
+
+                      <answer>110</answer>'
+                    answer: true
+            - title: Calculate m=110.
+              prob: 0.015903746915585878
+              logprob: -4.141200542449951
+        - title: Find the least positive integer m such that m^4+1 is divisible by 17^2=289.
+          prob: 0.08506442156031052
+          logprob: -2.464346408843994
+    - title: Check if there are smaller primes not congruent to 1 mod 8 that could work (unlikely but
+        worth noting why).
+      prob: 0.2017613928657726
+      logprob: -1.600669503211975

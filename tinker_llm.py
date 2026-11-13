@@ -14,7 +14,7 @@ The prompt is rendered with the cookbook's gpt-oss renderer (harmony format):
 the system prompt becomes the developer instructions, the model reasons in its
 analysis channel, and only the final channel is returned as text. The raw
 tokens and per-token log-probs of the last call are kept in `last` for later
-use (e.g. the log-prob of each <parent> choice).
+use (e.g. the log-prob of each <follow_proposal> choice).
 
 `TinkerLLM.inkling()` sets up thinkingmachines/Inkling-Small with low thinking
 effort, for `search(root, llm, mode="continue")`.
@@ -28,8 +28,11 @@ out, for `search(root, complete=...)` with a base model.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+from llm import FOLLOW_TAG
 
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_RENDERER = "gpt_oss_medium_reasoning"  # also: gpt_oss_low_reasoning, gpt_oss_high_reasoning
@@ -213,7 +216,17 @@ class TinkerCompleter:
 
 
 QWEN_HYBRID = "Qwen/Qwen3.6-35B-A3B"
-PROMPT_TAIL = 32  # prompt tokens to get top-k log-probs for (covers the open <node><parent>k)
+PROMPT_TAIL = 32  # prompt tokens to get top-k log-probs for (covers the open <node><follow_proposal idx="k"/>)
+
+
+def _is_idx(s: str) -> bool:
+    """A bare ASCII number (top-k lists can hold e.g. subscript digits)."""
+    return bool(re.fullmatch(r"[0-9]+", s))
+
+
+def _at_follow_idx(text: str) -> bool:
+    """True right before a proposal idx digit, i.e. after '<follow_proposal idx="'."""
+    return bool(re.search(r"""<follow_proposal\s+idx\s*=\s*["']$""", text))
 
 
 @dataclass
@@ -226,7 +239,7 @@ class TinkerPrefill:
     With `qwen3_5_disable_thinking` that turn starts with an empty, closed
     <think></think> block, so the model continues the trace directly, without
     reasoning. Each call returns an llm.Reply: the continuation text plus, for
-    every <parent> in it and for the one the prefill ends with, the log-prob of
+    every <follow_proposal> in it and for the one the prefill ends with, the log-prob of
     each idx digit (from top-k log-probs, so no extra calls). `last` keeps the
     sampled tokens and their log-probs.
 
@@ -238,7 +251,7 @@ class TinkerPrefill:
     renderer: Any
     tokenizer: Any
     sampling_params: Any
-    topk: int = 20  # top-k log-probs per position, used to read <parent> choices
+    topk: int = 20  # top-k log-probs per position, used to read <follow_proposal> choices
     last: Optional[Sample] = field(default=None, repr=False)
 
     @classmethod
@@ -304,7 +317,7 @@ class TinkerPrefill:
             ),
         )
 
-    # --- reading <parent> choices from top-k log-probs ----------------------
+    # --- reading <follow_proposal> choices from top-k log-probs -------------
     def _digit_dist(self, entries: Any) -> Optional[dict[int, float]]:
         """{idx: logprob} from a position's top-k (token_id, logprob) list,
         keeping only tokens that decode to a bare number."""
@@ -313,28 +326,28 @@ class TinkerPrefill:
         dist: dict[int, float] = {}
         for token_id, lp in entries:
             s = self.tokenizer.decode([token_id])
-            if s.isdigit():
+            if _is_idx(s):
                 k = int(s)
                 dist[k] = max(lp, dist.get(k, float("-inf")))
         return dist
 
     def _sampled_choices(self, tokens: list[int], topk: Any, text: str) -> list:
-        """One entry per <parent> tag in the generated text: the distribution at
+        """One entry per <follow_proposal> tag in the generated text: the distribution at
         the token right after it (None if that token isn't a number or top-k is
         missing). If tags can't be lined up with tokens, all entries are None."""
         pieces = [self.tokenizer.decode([t]) for t in tokens]
-        n_tags = "".join(pieces).count("<parent>")
+        n_tags = len(FOLLOW_TAG.findall("".join(pieces)))
         choices: list = []
         tail = ""
         for i, piece in enumerate(pieces):
-            if tail.endswith("<parent>"):
+            if _at_follow_idx(tail):
                 entries = topk[i] if topk is not None and i < len(topk) else None
-                choices.append(self._digit_dist(entries) if piece.isdigit() else None)
+                choices.append(self._digit_dist(entries) if _is_idx(piece) else None)
             tail = (tail + piece)[-32:]
         return choices if len(choices) == n_tags else [None] * n_tags
 
     def _prefill_choice(self, prompt_tokens: list[int], topk: Any) -> Optional[dict[int, float]]:
-        """Distribution at the idx digit of the last <parent> in the prompt (the
+        """Distribution at the idx digit of the last <follow_proposal> in the prompt (the
         choice the pre-started reply ends with), from top-k prompt log-probs."""
         if not topk:
             return None
@@ -345,7 +358,7 @@ class TinkerPrefill:
         found = None
         tail = ""
         for j, piece in enumerate(pieces):
-            if tail.endswith("<parent>") and piece.isdigit():
+            if _at_follow_idx(tail) and _is_idx(piece):
                 found = tail_start + j
             tail = (tail + piece)[-32:]
         if found is None or not 0 <= found - offset < len(topk):

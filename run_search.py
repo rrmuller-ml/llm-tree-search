@@ -9,7 +9,7 @@ Expand one unexplored proposal of a saved tree (one call):
         --out runs/17x23_expanded.yaml
 
 Then open http://localhost:8000/ui/?file=../runs/17x23.yaml (serve the repo
-with `python3 -m http.server 8000`).
+with `python3 serve.py`).
 """
 
 from __future__ import annotations

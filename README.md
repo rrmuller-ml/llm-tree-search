@@ -16,9 +16,11 @@ probability `prob` (e.g. from the LLM's log-probs); the tree stores them but
 does not require them.
 
 [`llm.py`](llm.py) connects an LLM to the tree through a small XML format
-([below](#llm-in-the-loop)), and **it now runs against real models**: open
-models on Thinking Machines' [Tinker](https://tinker-docs.thinkingmachines.ai/)
-grow the tree, and the result opens in the viewer.
+([below](#llm-in-the-loop)), and **it runs against real models**: open models
+on Thinking Machines' [Tinker](https://tinker-docs.thinkingmachines.ai/) grow
+the tree, and the result opens in the viewer. [`eval_aime.py`](eval_aime.py)
+compares the tree format with plain chain-of-thought on AIME
+([results](#aime-evaluation)).
 
 ## Quick start: search with a real LLM
 
@@ -38,7 +40,7 @@ To develop one unexplored proposal of a saved tree (one call):
 
 ```bash
 uv run python run_search.py --load runs/17x23.yaml \
-    --expand "Use the difference of squares method: (20 - 3) * (20 + 3) = 20^2 - 3^2." \
+    --expand "Direct multiplication: 17 * 20 + 17 * 3" \
     --out runs/17x23_expanded.yaml
 ```
 
@@ -47,20 +49,21 @@ prefill ([details](#qwen36-35b-a3b-with-assistant-prefill)), prints the tree
 and saves it as YAML. To view it, serve the repo and open the file in the UI:
 
 ```bash
-python3 -m http.server 8000
+python3 serve.py
 ```
 
 <http://localhost:8000/ui/?file=../runs/17x23.yaml>
 
 Saved runs, both from these commands:
 
-- [`runs/17x23.yaml`](runs/17x23.yaml): one call, answer 391 by distributing
-  (340 + 51). The first choice was "Calculate 17 * 20 and 17 * 3" (p = 0.93);
-  "Use the difference of squares method" (p = 0.07) is left unexplored.
+- [`runs/17x23.yaml`](runs/17x23.yaml): one call, answer 391 by difference of
+  squares (400 - 9). The first choice was "Use difference of squares:
+  (20-3)(20+3)" (p = 0.99); "Direct multiplication: 17 * 20 + 17 * 3"
+  (p = 0.01) is left unexplored.
 - [`runs/17x23_expanded.yaml`](runs/17x23_expanded.yaml): the same tree after
-  expanding the difference-of-squares proposal: three new nodes and a second
-  answer, 400 - 9 = 391. "Calculate 20^2 which is 400." (p = 0.86) is still
-  unexplored.
+  expanding "Direct multiplication": three new nodes and a second answer, 391.
+  The model's thought switches back to difference of squares instead of
+  following the proposal's title, so the branch repeats the same method.
 
 `run_search.py` options: `--max-calls N`, `--model NAME`, and `--mode`:
 
@@ -80,7 +83,10 @@ Each call costs Tinker credits; `--max-calls` caps them.
 | [`llm.py`](llm.py) | XML codec for LLM output, plus `expand` and `search` |
 | [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (Qwen), `TinkerLLM` (gpt-oss, Inkling), `TinkerCompleter` (base models) |
 | [`run_search.py`](run_search.py) | Command line: run a search on Tinker and save the tree |
-| [`runs/`](runs/) | Saved search trees |
+| [`eval_aime.py`](eval_aime.py) | AIME 2024 + 2025 evaluation: CoT vs one tree chain, strict format scoring |
+| [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME problems with answers |
+| [`runs/`](runs/) | Saved search trees (17 * 23) and AIME results ([`runs/aime_eval/`](runs/aime_eval/)) |
+| [`serve.py`](serve.py) | Serves the repo for the viewer with caching turned off |
 | [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py), [`test_tinker_llm.py`](test_tinker_llm.py) | Unit tests (`unittest`), with fake models |
 | [`example.yaml`](example.yaml) | Example tree in `Node.to_dict()` format |
 | [`ui/`](ui/) | HTML viewer for trees ([README](ui/README.md)) |
@@ -176,40 +182,52 @@ root = Node.from_dict(yaml.safe_load(open("example.yaml")))
 ## LLM in the loop
 
 Each LLM call writes a **depth-first chain of nodes**. A node lists candidate
-proposals; the next node says with `<parent>` which of those it develops. The
+proposals; the next node says with `<follow_proposal>` which of those it develops. The
 proposals not picked stay unexplored in the tree, so the search can come back
 to them later.
 
 ```xml
 <node>
+  <follow_proposal idx=""/>
+  <thought></thought>
+  <proposal idx="0">What is 14 * 25?</proposal>
+</node>
+<node>
+  <follow_proposal idx="0"/>
   <thought>14 * 25 is easier to compute in parts.</thought>
   <proposal idx="0">Distribute over 25: 10*25 + 4*25</proposal>
   <proposal idx="1">Use 4*25 = 100: 14*25 = 3.5*100</proposal>
 </node>
 <node>
-  <parent>0</parent>
-  <thought>10*25 = 250 and 4*25 = 100.</thought>
-  <proposal idx="0">Add the parts: 250 + 100</proposal>
+  <follow_proposal idx="1"/>
+  <thought>4*25 = 100 and 14 = 3.5*4, so 14*25 = 3.5*100.</thought>
+  <proposal idx="0">Multiply: 3.5*100</proposal>
   <proposal idx="1">Check another way: 7*50</proposal>
 </node>
 <node>
-  <parent>0</parent>
-  <thought>250 + 100 = 350, so 14 * 25 = 350.</thought>
+  <follow_proposal idx="0"/>
+  <thought>3.5*100 = 350, so 14 * 25 = 350.</thought>
+  <answer>350</answer>
 </node>
 ```
 
 Rules:
 
-- The first node of a reply develops the proposal the code asked for, so it has no `<parent>`.
-- `<parent>k</parent>` is the `idx` of a proposal of the **previous** node.
-  `idx` defaults to the proposal's 0-based position.
-- A node with **no proposals is the answer**: its thought holds the final
-  answer and no node follows it. It is stored with `answer = True`.
+- Every trace starts with a **question node** written by the code, mirroring the
+  tree's root: `<follow_proposal idx=""/>`, an empty thought, and the question as its only proposal.
+- The first node of a reply develops the proposal the code asked for; the code
+  writes its `<follow_proposal idx="k"/>` (0 when developing the question).
+- `<follow_proposal idx="k"/>` points to the proposal with `idx` k of the
+  **previous** node. `idx` defaults to the proposal's 0-based position.
+- A node with **no proposals is the answer**. Its answer goes in its own
+  `<answer>...</answer>` element after `</thought>`; nothing follows it. It is
+  stored with `answer = True`, and the `<answer>` element is kept at the end of
+  its stored thought (the tree has no separate answer field).
 - A reply may stop on a node with open proposals; the search resumes from there.
 - Text outside `<node>` tags and unknown attributes are ignored. A reply cut
   off mid-node keeps every complete node and drops the unfinished one.
 - After a node with exactly one proposal there is nothing to choose, so the
-  next node's `<parent>` is set to it whatever number the model wrote.
+  next node's `<follow_proposal>` is set to it whatever number the model wrote.
 - If a reply breaks a rule partway, its valid start is kept and added to the
   tree, and the error is recorded in `result.errors` (`PartialChain`). A reply
   with no valid node raises `DecodeError` and leaves the tree unchanged.
@@ -217,11 +235,11 @@ Rules:
 
 The LLM writes no scores. `Proposal.value` is meant to come from a trained
 critic and is left unset. `Proposal.logprob` is the log-prob of the LLM
-writing that proposal's idx right after `<parent>`, and `Proposal.prob` is the
+writing that proposal's idx right after `<follow_proposal>`, and `Proposal.prob` is the
 raw `exp(logprob)` (not renormalized over siblings).
 
 They come for free from generation: a model may return an `llm.Reply` with the
-idx distribution at each `<parent>` (`choice_logprobs`) and at the `<parent>`
+idx distribution at each `<follow_proposal>` (`choice_logprobs`) and at the `<follow_proposal>`
 a pre-started reply ends with (`prefill_choice`). `TinkerPrefill` reads both
 from top-k log-probs in the same sampling call, so the first call fills every
 choice it writes, and an expansion fills the choice the code made. A choice
@@ -282,18 +300,24 @@ decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
 Instead of a chat call, a completion model can continue a text document. The
 document is a short header with one solved example, the question, and the
 trace so far, cut right after the node that owns the proposal to explore, with
-an open node whose `<parent>` picks that proposal:
+an open node whose `<follow_proposal>` picks that proposal:
 
 ```xml
 <question>What is 12 * 15?</question>
 <trace>
 <node>
+  <follow_proposal idx=""/>
+  <thought></thought>
+  <proposal idx="0">What is 12 * 15?</proposal>
+</node>
+<node>
+  <follow_proposal idx="0"/>
   <thought>Split into easier parts.</thought>
   <proposal idx="0">Distribute over 15: 12*10 + 12*5</proposal>
   <proposal idx="1">Double and halve: 6*30</proposal>
 </node>
 <node>
-  <parent>1</parent>
+  <follow_proposal idx="1"/>
 ```
 
 The model writes the rest of that node (and possibly more nodes). Text after
@@ -351,7 +375,7 @@ result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10)
 
 The cleanest way to run the cut-trace workflow on a chat model: the assistant
 reply is **pre-started** with the trace, so choosing a proposal is just cutting
-the trace and setting `<parent>`, and the model continues its own reply.
+the trace and setting `<follow_proposal>`, and the model continues its own reply.
 
 ```python
 from llm import search
@@ -364,13 +388,13 @@ result = search(Node.new_root("What is 12 * 15?"), prefill=prefill, max_calls=10
 
 - System message: `SYSTEM_PROMPT`. User message: the question. Assistant
   prefill: `<trace>`, the trace cut after the node that owns the proposal,
-  and an open `<node><parent>k</parent>` (`prefill_parts`).
+  and an open `<node><follow_proposal idx="k"/>` (`prefill_parts`).
 - The `qwen3_5_disable_thinking` renderer opens the assistant turn with an
   empty, closed `<think></think>` block, so the model answers without hidden
   reasoning; the reasoning lives in each `<thought>`.
 - The prefill is added with the cookbook's `build_generation_prompt(..., prefill=...)`.
 - `prefill.last` holds only the sampled continuation: its text, tokens and
-  per-token log-probs, so the log-prob of each `<parent>` the model writes can
+  per-token log-probs, so the log-prob of each `<follow_proposal>` the model writes can
   become that proposal's `prob`.
 - Other Qwen hybrids work the same way: `TinkerPrefill.create(model="Qwen/Qwen3.5-397B-A17B")`.
 
@@ -391,14 +415,76 @@ result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10, mode="cont
 
 - The user message is `CONTINUE_INSTRUCTION` followed by the question and the
   trace cut after the node that owns the proposal, ending in an open
-  `<node><parent>k</parent>`. `SYSTEM_PROMPT` (with the example) stays the
+  `<node><follow_proposal idx="k"/>`. `SYSTEM_PROMPT` (with the example) stays the
   system message.
 - The reply may continue inside the open node or rewrite it from `<node>`; a
-  rewritten node must keep the chosen `<parent>`.
+  rewritten node must keep the chosen `<follow_proposal>`.
 - `effort` is Inkling's thinking-effort control in [0, 1). `0.0` steers it
   toward no reasoning but doesn't forbid it; any reasoning it does write is
   kept in `llm.last.thinking`, not in the tree.
 - Continue mode works with any chat model: `search(root, llm, mode="continue")`.
+
+## AIME evaluation
+
+[`eval_aime.py`](eval_aime.py) compares the tree format with plain
+chain-of-thought on AIME 2024 + 2025 (60 problems,
+[`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl), from
+[HuggingFaceH4/aime_2024](https://huggingface.co/datasets/HuggingFaceH4/aime_2024)
+and [MathArena/aime_2025](https://huggingface.co/datasets/MathArena/aime_2025)).
+Both methods use the same model (`Qwen/Qwen3.6-35B-A3B`, thinking off),
+temperature 0.7, up to 16,384 output tokens and one sample per problem.
+
+- **CoT**: one chat call. The system prompt asks to think step by step and end
+  with `<answer>N</answer>`.
+- **Tree**: the tree prompt (`SYSTEM_PROMPT`, assistant prefill) and **one
+  depth-first chain** (`search(..., max_calls=1)`). The question ends with
+  "(The answer is an integer from 0 to 999, written between `<answer>` and
+  `</answer>`.)".
+
+### Strict scoring
+
+A problem counts as correct only when the **format is correct and the answer is
+right**. The answer is read from one place only; nothing is searched for
+elsewhere in the reply.
+
+- CoT format: exactly one `<answer>...</answer>`, holding only an integer 0-999.
+- Tree format, checked on everything the model writes after the pre-started
+  `<follow_proposal idx="0"/>`:
+
+| Check | Meaning |
+| --- | --- |
+| `trace_closed` | The reply ends with `</trace>` and nothing after it |
+| `only_nodes` | Inside the trace there is nothing but complete `<node>` elements |
+| `valid_chain` | Every node has a non-empty thought; every node after the first has a `<follow_proposal idx>` naming a proposal of the node directly above (empty proposals are ignored, duplicates allowed, no repairs) |
+| `final_is_answer` | The last node has no proposals |
+| `answer_element` | Exactly one `<answer>` in the trace, as its own element in the last node after its thought |
+| `answer_is_integer` | That answer holds only an integer 0-999 |
+| `branching` | Every node except the last has at least two proposals (reported only, not required) |
+
+### Results
+
+| Method | Format correct | Format correct AND right | AIME 2024 | AIME 2025 |
+| --- | --- | --- | --- | --- |
+| CoT | 60/60 = 100% | **45/60 = 75.0%** | 23/30 | 22/30 |
+| Tree, one chain | 42/60 = 70% | **36/60 = 60.0%** | 19/30 | 17/30 |
+
+Tree checks passed: `trace_closed` 59, `only_nodes` 56, `valid_chain` 52,
+`final_is_answer` 48, `answer_element` 44, `answer_is_integer` 42 (of 60);
+`branching` 12. Most of the gap is format: 12 replies stop on a node that still
+has proposals, and 8 break the chain. 6 well-formed trees have a wrong answer.
+Both methods write about 5,000 output tokens per problem.
+
+Files in [`runs/aime_eval/`](runs/aime_eval/): `cot.jsonl` and `tree.jsonl`
+(one line per problem: prediction, format checks, raw reply), `trees/<id>.yaml`
+(every tree, for the viewer) and `summary.txt`.
+
+```bash
+uv run python eval_aime.py --method both --workers 16          # full run (makes 120 Tinker calls)
+uv run python eval_aime.py --method tree --limit 2             # quick check
+uv run python eval_aime.py --rescore runs/aime_eval/tree.jsonl # re-apply the checks to saved replies
+```
+
+`--model` picks another Tinker model, e.g. `Qwen/Qwen3.5-397B-A17B`.
 
 ## Tests
 
@@ -411,7 +497,7 @@ The `example.yaml` tests are skipped if PyYAML is not installed.
 ## Viewer
 
 ```bash
-python3 -m http.server 8000
+python3 serve.py
 ```
 
 Then open <http://localhost:8000/ui/>. See [`ui/README.md`](ui/README.md).

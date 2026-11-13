@@ -1,0 +1,778 @@
+proposals:
+- title: "Suppose $\\triangle ABC$ has angles $\\angle BAC = 84^\\circ$, $\\angle ABC = 60^\\circ$, and\
+    \ $\\angle ACB = 36^\\circ$. Let $D$, $E$, and $F$ be the midpoints of sides $\\overline{BC}$, $\\\
+    overline{AC}$, and $\\overline{AB}$, respectively. The circumcircle of $\\triangle DEF$ intersects\
+    \ $\\overline{BD}$, $\\overline{AE}$, and $\\overline{AF}$ at points $G$, $H$, and $J$, respectively.\
+    \ The points $G$, $D$, $E$, $H$, $J$, and $F$ divide the circumcircle of $\\triangle DEF$ into six\
+    \ minor arcs, as shown. Find $\\wideparen{DE} + 2 \\cdot \\wideparen{HJ} + 3 \\cdot \\wideparen{FG}$,\
+    \ where the arcs are measured in degrees.\n\n\\begin{tikzpicture}[scale=1.2]\n    \\coordinate (B)\
+    \ at (0,0);\n    \\coordinate (C) at (6,0);\n    \\coordinate (A) at (1.78,3.07);\n    \n    \\coordinate\
+    \ (D) at ($(B)!0.5!(C)$);\n    \\coordinate (E) at ($(A)!0.5!(C)$);\n    \\coordinate (F) at ($(A)!0.5!(B)$);\n\
+    \    \n    \\draw (A) -- (B) -- (C) -- cycle;\n\n    \\fill (A) circle (2pt) node[above] {$A$};\n\
+    \    \\fill (B) circle (2pt) node[below] {$B$};\n    \\fill (C) circle (2pt) node[below] {$C$};\n\n\
+    \    \\fill (D) circle (2pt) node[below] {$D$};\n    \\fill (E) circle (2pt) node[right] {$E$};\n\
+    \    \\fill (F) circle (2pt) node[left] {$F$};\n\n    \\draw (D) -- (E) -- (F) -- cycle;\n\n    \\\
+    coordinate (O) at (2.39,1.38);\n    \n    \\draw (O) circle (1.51);\n\n    \\coordinate (G) at (1.72,\
+    \ 0.03);\n    \\coordinate (J) at (1.5, 2.6);\n    \\coordinate (H) at (2.08, 2.85);\n\n    \\fill\
+    \ (G) circle (2pt) node[below] {$G$};\n    \\fill (H) circle (2pt) node[above] {$H$};\n    \\fill\
+    \ (J) circle (2pt) node[above left] {$J$};\n\\end{tikzpicture}\n\n\n(The answer is an integer from\
+    \ 0 to 999, written between <answer> and </answer>.)"
+  prob: 0.9997868665965806
+  logprob: -0.0002131561195710674
+  node:
+    thought: Let's analyze the geometry. $\triangle ABC$ has angles $84^\circ, 60^\circ, 36^\circ$. $D,
+      E, F$ are midpoints. $\triangle DEF$ is the medial triangle, similar to $\triangle ABC$ with scale
+      factor $1/2$. The circumcircle of $\triangle DEF$ is the nine-point circle of $\triangle ABC$. Let
+      $\Gamma$ be this circle. We need to find the measures of arcs $\wideparen{DE}$, $\wideparen{HJ}$,
+      and $\wideparen{FG}$ on $\Gamma$. The sum of all six arcs is $360^\circ$. The points on the circle
+      are $G, D, E, H, J, F$ in some order. From the diagram and problem statement, the order seems to
+      be $G, D, E, H, J, F$ or similar. Let's determine the positions.
+    proposals:
+    - title: Calculate the central angles subtended by the chords $DE, EF, FD$ of the nine-point circle.
+      prob: 0.9588211664983903
+      logprob: -0.04205070063471794
+      node:
+        thought: 'The medial triangle $\triangle DEF$ is homothetic to $\triangle ABC$ with center at
+          the centroid $M$ and ratio $-1/2$. The circumcenter of $\triangle DEF$ is the nine-point center
+          $N$, which is the midpoint of $OH$ (circumcenter and orthocenter of $\triangle ABC$). The radius
+          of the nine-point circle is $R/2$.
+
+          The vertices $D, E, F$ correspond to $A, B, C$ in reverse orientation? No, $D$ is midpoint of
+          $BC$, $E$ of $AC$, $F$ of $AB$.
+
+          The arc $\wideparen{DE}$ in $\triangle DEF$ corresponds to the side $DE$. In $\triangle ABC$,
+          $DE = AB/2 = c/2$. The chord length $DE$ in the nine-point circle determines the arc measure.
+
+          Actually, it''s easier to look at angles. The angle subtended by chord $DE$ at the center $N$
+          is $2 \angle DFE$? No, the angle at the circumference is related to the arc.
+
+          In $\triangle DEF$, $\angle FDE = \angle BAC = 84^\circ$? No. $DE \parallel AB$, $EF \parallel
+          BC$, $FD \parallel AC$.
+
+          So $\triangle DEF \sim \triangle ABC$?
+
+          Sides of $\triangle DEF$: $EF = a/2$, $FD = b/2$, $DE = c/2$.
+
+          Angles of $\triangle DEF$: $\angle FDE = \angle A = 84^\circ$?
+
+          Vector $DF$ is parallel to $AC$. Vector $DE$ is parallel to $AB$. Angle between $AC$ and $AB$
+          is $A=84^\circ$. So $\angle FDE = 84^\circ$.
+
+          Similarly $\angle DEF = \angle B = 60^\circ$ and $\angle EFD = \angle C = 36^\circ$.
+
+          So $\triangle DEF$ has angles $84^\circ, 60^\circ, 36^\circ$.
+
+          The arcs of the circumcircle of $\triangle DEF$ corresponding to sides $DE, EF, FD$ are determined
+          by the angles opposite to them in $\triangle DEF$.
+
+          Arc $\wideparen{EF}$ (not containing $D$) subtends $\angle FDE = 84^\circ$ at circumference?
+          No. The measure of arc $EF$ is $2 \times \angle FDE = 168^\circ$.
+
+          Arc $\wideparen{FD}$ is $2 \times \angle DEF = 120^\circ$.
+
+          Arc $\wideparen{DE}$ is $2 \times \angle EFD = 72^\circ$.
+
+          Check sum: $168+120+72 = 360$. Correct.
+
+          So, $\wideparen{DE} = 72^\circ$. This is the minor arc between $D$ and $E$.
+
+          Note: The problem asks for $\wideparen{DE}$, which usually means the minor arc unless specified.
+          Given the points divide the circle into six minor arcs, these are the segments between adjacent
+          points on the circle.
+
+          We established $\wideparen{DE} = 72^\circ$.
+
+
+          Now we need $\wideparen{HJ}$ and $\wideparen{FG}$.
+
+          Points $G, H, J$ are intersections of the nine-point circle with sides $BD, AE, AF$.
+
+          $D$ is midpoint of $BC$. $G$ lies on $BD$. Since $D$ is on the circle and $G$ is on the segment
+          $BD$, and the circle passes through $D$, $G$ must be another intersection point.
+
+          Wait, $BD$ is a segment of the line $BC$. The nine-point circle passes through $D$ (midpoint
+          of $BC$). Does it intersect $BC$ at another point?
+
+          The nine-point circle passes through the feet of the altitudes. Let $H_a$ be the foot of the
+          altitude from $A$ to $BC$. $H_a$ is on the nine-point circle.
+
+          The line $BC$ contains $D$ and $H_a$. So the intersections of the nine-point circle with line
+          $BC$ are $D$ and $H_a$.
+
+          The problem states $G$ is the intersection with $\overline{BD}$.
+
+          $B, G, D, C$ are collinear. $D$ is midpoint.
+
+          Is $G = H_a$?
+
+          The foot of the altitude $H_a$ lies on $BC$.
+
+          Does $H_a$ lie on segment $BD$?
+
+          $\angle B = 60^\circ, \angle C = 36^\circ$. Since $\angle B < 90$ and $\angle C < 90$, the foot
+          $H_a$ lies between $B$ and $C$.
+
+          $D$ is the midpoint.
+
+          In $\triangle ABC$, $AB=c, AC=b, BC=a$.
+
+          $BH_a = c \cos B$. $BD = a/2$.
+
+          We need to compare $BH_a$ and $BD$.
+
+          Using Sine Rule: $a/\sin 84 = b/\sin 60 = c/\sin 36$.
+
+          Let $a = \sin 84$. Then $c = \sin 36$.
+
+          $BH_a = c \cos 60 = \sin 36 \cdot (1/2) = 0.5 \sin 36$.
+
+          $BD = a/2 = 0.5 \sin 84$.
+
+          Since $\sin 36 < \sin 84$, $BH_a < BD$.
+
+          So $H_a$ lies on segment $BD$.
+
+          Thus, $G = H_a$.
+
+          So $G$ is the foot of the altitude from $A$ to $BC$.
+
+
+          Similarly, $H$ is intersection of nine-point circle with $\overline{AE}$.
+
+          $E$ is midpoint of $AC$. Line $AC$ contains $E$.
+
+          Intersections of nine-point circle with $AC$ are $E$ and $H_b$ (foot of altitude from $B$ to
+          $AC$).
+
+          Does $H_b$ lie on segment $AE$?
+
+          $AH_b = c \cos A = c \cos 84$.
+
+          $AE = b/2$.
+
+          $c = \sin 36, b = \sin 60$.
+
+          $AH_b = \sin 36 \cos 84$.
+
+          $AE = 0.5 \sin 60$.
+
+          $\cos 84$ is small ($\approx 0.1$). $\sin 36 \approx 0.58$. $AH_b \approx 0.06$.
+
+          $AE \approx 0.43$.
+
+          So $H_b$ is close to $A$. $H_b$ lies on $AC$.
+
+          Does it lie on $AE$? $A, H_b, E, C$ order?
+
+          $AH_b < AE$?
+
+          $2 \sin 36 \cos 84 \approx 1.16 \cdot 0.1 = 0.116$.
+
+          $\sin 60 \approx 0.866$. $0.5 \sin 60 \approx 0.433$.
+
+          Yes, $AH_b < AE$. So $H$ lies on segment $AE$?
+
+          Wait, the problem says $H$ is on $\overline{AE}$. The circle passes through $E$. The other intersection
+          is $H_b$.
+
+          Is $H = H_b$?
+
+          If $H_b$ is on $\overline{AE}$, then yes.
+
+          Order on $AC$: $A$ is vertex. $H_b$ is foot. $E$ is midpoint.
+
+          $AH_b < AC/2$?
+
+          $c \cos A < b/2 \iff 2 c \cos A < b$.
+
+          $2 \sin C \cos A < \sin B$?
+
+          $2 \sin 36 \cos 84 < \sin 60$.
+
+          LHS $\approx 0.116$. RHS $\approx 0.866$. True.
+
+          So $H_b$ lies between $A$ and $E$.
+
+          Thus $H = H_b$, the foot of the altitude from $B$ to $AC$.
+
+
+          Similarly, $J$ is intersection with $\overline{AF}$.
+
+          $F$ is midpoint of $AB$. Other intersection is $H_c$ (foot of altitude from $C$ to $AB$).
+
+          $AH_c = b \cos A$.
+
+          $AF = c/2$.
+
+          $b = \sin 60, c = \sin 36$.
+
+          $AH_c = \sin 60 \cos 84 \approx 0.866 \cdot 0.1 \approx 0.087$.
+
+          $AF = 0.5 \sin 36 \approx 0.29$.
+
+          $AH_c < AF$. So $H_c$ lies on $\overline{AF}$.
+
+          Thus $J = H_c$, the foot of the altitude from $C$ to $AB$.
+
+
+          So the points are:
+
+          $G = H_a$ (foot from $A$)
+
+          $H = H_b$ (foot from $B$)
+
+          $J = H_c$ (foot from $C$)
+
+          $D, E, F$ are midpoints.
+
+          The points on the nine-point circle are $H_a, D, E, H_b, H_c, F$?
+
+          Let''s check the order.
+
+          The nine-point circle passes through midpoints and feet of altitudes.
+
+          The standard order on the nine-point circle for acute triangle is alternating midpoints and
+          feet?
+
+          Let''s verify the angles or positions.
+
+          We need arc $\wideparen{HJ}$ and $\wideparen{FG}$.
+
+          $H = H_b$, $J = H_c$.
+
+          $F$ is midpoint of $AB$, $G = H_a$.
+
+          We need arc $H_b H_c$ and arc $F H_a$.
+
+
+          Let''s calculate the arc measures.
+
+          The arc measure between two points on the nine-point circle is twice the angle subtended by
+          the chord at the circumference of the nine-point circle?
+
+          Or we can use the property that the nine-point circle is the circumcircle of the orthic triangle
+          $H_a H_b H_c$ and the medial triangle $DEF$.
+
+          Actually, the vertices of the orthic triangle are $H_a, H_b, H_c$.
+
+          The vertices of the medial triangle are $D, E, F$.
+
+          The nine-point circle is the circumcircle of both.
+
+          Let''s find the angle $\angle H_b N H_c$ where $N$ is the center.
+
+          Alternatively, the arc $H_b H_c$ (minor) subtends angle $\angle H_b D H_c$ at the circumference?
+          No, $D$ is on the circle.
+
+          The measure of arc $H_b H_c$ is $2 \angle H_b D H_c$? Or $2 \angle H_b F H_c$?
+
+          Let''s use the angles of the orthic triangle.
+
+          $\triangle H_a H_b H_c$ is the orthic triangle.
+
+          Angles of orthic triangle:
+
+          $\angle H_b H_a H_c = 180 - 2A = 180 - 168 = 12^\circ$.
+
+          $\angle H_a H_b H_c = 180 - 2B = 180 - 120 = 60^\circ$.
+
+          $\angle H_a H_c H_b = 180 - 2C = 180 - 72 = 108^\circ$.
+
+          Wait, sum $12+60+108 = 180$.
+
+          The arc $H_b H_c$ (not containing $H_a$) corresponds to the angle at $H_a$?
+
+          The measure of arc $H_b H_c$ is $2 \angle H_b H_a H_c = 2(12^\circ) = 24^\circ$.
+
+          Is this the minor arc?
+
+          $12^\circ$ is acute, so yes.
+
+          So $\wideparen{HJ} = \wideparen{H_b H_c} = 24^\circ$.
+
+
+          Now for $\wideparen{FG}$.
+
+          $F$ is midpoint of $AB$. $G = H_a$ is foot from $A$.
+
+          We need arc $F H_a$.
+
+          Consider the quadrilateral $F H_a B ...$?
+
+          Let''s find the angle subtended by chord $F H_a$ at a point on the circle, say $E$ or $D$ or
+          $H_b$.
+
+          Angle $\angle F D H_a$?
+
+          $D$ is midpoint of $BC$. $F$ is midpoint of $AB$. $H_a$ is foot from $A$.
+
+          In $\triangle ABC$, $DF \parallel AC$.
+
+          So $\angle F D B = \angle C = 36^\circ$?
+
+          Vector $DF$ is parallel to $AC$. Vector $DB$ is along $CB$.
+
+          Angle between $AC$ and $CB$ is $C$.
+
+          So $\angle (DF, DB) = C = 36^\circ$.
+
+          So $\angle F D B = 36^\circ$.
+
+          $H_a$ lies on $BC$. So $D, H_a, B$ are collinear.
+
+          Thus $\angle F D H_a = 36^\circ$.
+
+          This angle is inscribed in the nine-point circle.
+
+          The arc $F H_a$ (not containing $D$) is $2 \times 36^\circ = 72^\circ$.
+
+          Is this the minor arc?
+
+          We need to check if $F$ and $H_a$ are adjacent in the sequence.
+
+          The points are $F, H_a, ...$?
+
+          Let''s check the order of points on the circle.
+
+          Starting from $A$ side?
+
+          Let''s calculate all 6 arcs.
+
+          1. $\wideparen{DE}$. We found $72^\circ$.
+
+          2. $\wideparen{EF}$. Chord $EF$. Angle $\angle E D F = 60^\circ$? No.
+
+          In $\triangle DEF$, $\angle FDE = 84, \angle DEF = 60, \angle EFD = 36$.
+
+          Arc $EF$ corresponds to angle at $D$? $2 \times 84 = 168^\circ$.
+
+          Arc $FD$ corresponds to angle at $E$? $2 \times 60 = 120^\circ$.
+
+          Arc $DE$ corresponds to angle at $F$? $2 \times 36 = 72^\circ$.
+
+          Wait, earlier I said $\wideparen{DE} = 72$.
+
+          Let''s re-verify which arc is which.
+
+          Vertices $D, E, F$.
+
+          Arc $DE$ subtends $\angle DFE = 36^\circ$ at circumference?
+
+          Yes, $\angle DFE$ is angle at $F$ in $\triangle DEF$.
+
+          So Arc $DE = 72^\circ$.
+
+          Arc $EF$ subtends $\angle EDF = 84^\circ$ at circumference?
+
+          Yes. Arc $EF = 168^\circ$.
+
+          Arc $FD$ subtends $\angle DEF = 60^\circ$ at circumference?
+
+          Yes. Arc $FD = 120^\circ$.
+
+          Sum $72+168+120 = 360$. Correct.
+
+
+          Now insert $G, H, J$.
+
+          $G = H_a$. $G$ is on arc $FD$? Or arc $DE$?
+
+          $G$ is on $BD$. $D$ is on circle.
+
+          $H_a$ is on $BC$.
+
+          $F$ is midpoint $AB$.
+
+          Arc $FG$?
+
+          We calculated $\angle F D H_a = 36^\circ$.
+
+          This implies Arc $F H_a = 72^\circ$.
+
+          Does this arc contain other points?
+
+          The points on the circle are ordered.
+
+          Let''s trace the circle.
+
+          Start at $D$.
+
+          Go towards $F$. Arc $DF = 120^\circ$.
+
+          Does $G$ lie on Arc $DF$?
+
+          $G=H_a$. $F$ is mid $AB$. $D$ is mid $BC$.
+
+          $H_a$ is on $BC$.
+
+          Angle $\angle F D G = 36^\circ$.
+
+          So Arc $F G = 72^\circ$.
+
+          Since Arc $FD = 120^\circ$, and Arc $FG = 72^\circ$, $G$ lies on Arc $FD$.
+
+          Remaining Arc $GD = 120 - 72 = 48^\circ$.
+
+          So order: $F, G, D$.
+
+
+          Next, from $D$ to $E$. Arc $DE = 72^\circ$.
+
+          Does $H$ lie on Arc $DE$?
+
+          $H = H_b$. $E$ is mid $AC$.
+
+          $H_b$ is on $AC$.
+
+          Consider $\angle H_b E D$?
+
+          $E$ is on circle.
+
+          Angle $\angle H_b E D$?
+
+          $HE$ is part of line $AC$. $ED$ is parallel to $AB$.
+
+          Angle between $AC$ and $AB$ is $A = 84^\circ$.
+
+          So $\angle (EC, ED) = 180 - 84 = 96$? Or just $A$?
+
+          Vector $ED$ is parallel to $BA$. Vector $EC$ is along $AC$.
+
+          Angle between $BA$ and $AC$ is $180-A$.
+
+          So $\angle DEC = 180 - 84 = 96^\circ$.
+
+          $H_b$ lies on $AC$.
+
+          So $\angle H_b E D = 96^\circ$?
+
+          If so, Arc $H_b D = 2 \times 96 = 192^\circ$. This is major arc.
+
+          Minor arc $H_b D = 360 - 192 = 168^\circ$?
+
+          This seems large. Let''s check position.
+
+          $H_b$ is foot from $B$.
+
+          Is $H_b$ on Arc $DE$?
+
+          $D$ is mid $BC$. $E$ is mid $AC$.
+
+          $H_b$ is on $AC$.
+
+          The arc $DE$ connects mid $BC$ and mid $AC$.
+
+          The foot $H_b$ is on $AC$.
+
+          Let''s check angle $\angle E D H_b$?
+
+          Or use symmetry.
+
+          We found Arc $F G = 72$.
+
+          Arc $G D = 48$.
+
+          Arc $D E = 72$.
+
+          Where is $H$?
+
+          $H = H_b$.
+
+          We need Arc $E H$ and Arc $H J$.
+
+          Let''s calculate Arc $E H_b$.
+
+          Angle $\angle E D H_b$?
+
+          $D$ is mid $BC$. $H_b$ is foot from $B$ to $AC$.
+
+          In right $\triangle B H_b C$, $D$ is mid hypotenuse. So $D H_b = D C = D B$.
+
+          $\triangle D H_b C$ is isosceles.
+
+          $\angle H_b D C = 180 - 2C = 180 - 72 = 108^\circ$.
+
+          $D, H_b, E$ on circle.
+
+          Angle $\angle H_b E D$?
+
+          Let''s use the arc measure directly from angles at center or other points.
+
+          Arc $H_b C$? No $C$ not on circle.
+
+          Arc $H_b D$?
+
+          Angle $\angle H_b F D$?
+
+          $F$ is mid $AB$.
+
+          $\angle H_b F D$?
+
+          $F H_b \perp AC$? No. $B H_b \perp AC$. $F$ is mid $AB$.
+
+          $F H_b$ is median to hypotenuse in $\triangle A H_b B$? No, $\triangle A H_b B$ is right at
+          $H_b$.
+
+          So $F H_b = F A = F B$.
+
+          $\triangle F H_b A$ is isosceles.
+
+          $\angle H_b F A = 180 - 2 A H_b F$?
+
+          $\angle F A H_b = A = 84^\circ$.
+
+          $\angle A H_b F = 84^\circ$.
+
+          $\angle A F H_b = 180 - 168 = 12^\circ$.
+
+          $F, D$ on circle.
+
+          Angle $\angle H_b D F$?
+
+          We know Arc $F G = 72$, Arc $G D = 48$.
+
+          So Arc $F D = 120$.
+
+          We need position of $H_b$.
+
+          Let''s look at Arc $E H_b$.
+
+          $E$ is mid $AC$. $H_b$ is on $AC$.
+
+          Arc $E H_b$?
+
+          Angle $\angle E D H_b$?
+
+          $\angle E D C = 180 - \angle E D B$.
+
+          $ED \parallel AB$. $\angle E D C = \angle B = 60^\circ$?
+
+          Vector $DE \parallel BA$. Vector $DC$ along $BC$.
+
+          Angle $B$ is between $BA$ and $BC$.
+
+          So $\angle (DE, DC) = 60^\circ$.
+
+          So $\angle E D C = 60^\circ$.
+
+          We found $\angle H_b D C = 108^\circ$.
+
+          So $\angle E D H_b = 108 - 60 = 48^\circ$.
+
+          So Arc $E H_b = 2 \times 48 = 96^\circ$.
+
+          Since Arc $DE = 72^\circ$, and Arc $E H_b = 96^\circ$, $H_b$ is NOT on Arc $DE$.
+
+          $H_b$ is on the other side of $E$?
+
+          Order: $D, E, ...$
+
+          Arc $D E = 72$.
+
+          Arc $E H_b = 96$.
+
+          So $H_b$ is after $E$.
+
+          Let''s check Arc $H_b F$?
+
+          Total circle 360.
+
+          Points so far: $F, G, D, E, H_b$.
+
+          Arcs:
+
+          $F G = 72$.
+
+          $G D = 48$.
+
+          $D E = 72$.
+
+          $E H_b = 96$.
+
+          Sum = $72+48+72+96 = 288$.
+
+          Remaining Arc $H_b F = 360 - 288 = 72^\circ$.
+
+          Let''s verify this with $J$.
+
+          $J = H_c$.
+
+          $H_c$ is foot from $C$ to $AB$.
+
+          $J$ lies on $\overline{AF}$.
+
+          $F$ is mid $AB$.
+
+          Arc $F J$?
+
+          Similar to $G$.
+
+          $\angle H_c F B$?
+
+          $\triangle H_c A B$ right at $H_c$. $F$ mid $AB$.
+
+          $F H_c = F A = F B$.
+
+          $\angle F H_c A = A = 84$.
+
+          $\angle A F H_c = 12$.
+
+          Angle $\angle H_c F D$?
+
+          $F D \parallel AC$.
+
+          Angle between $AC$ and $AB$ is $A=84$.
+
+          Angle between $FD$ and $FB$?
+
+          $FD \parallel AC$. $FB$ along $AB$.
+
+          $\angle (AC, AB) = 84$.
+
+          So $\angle D F B = 84$? Or $180-84$?
+
+          Vector $FD$ is parallel to $CA$? No, $D$ mid $BC$, $F$ mid $AB$. $FD \parallel AC$.
+
+          Vector $FD$ direction $A \to C$?
+
+          $F$ is mid $AB$. $D$ is mid $BC$.
+
+          $\vec{FD} = \frac{1}{2} \vec{AC}$.
+
+          $\vec{FB} = \frac{1}{2} \vec{AB}$.
+
+          Angle between $\vec{AC}$ and $\vec{AB}$ is $A=84$.
+
+          So $\angle D F B = 84^\circ$.
+
+          $H_c$ lies on $AB$.
+
+          $\angle H_c F B = 0$? No, $H_c$ is on segment $AB$.
+
+          $F$ is on segment $AB$.
+
+          $H_c$ is foot.
+
+          Order on $AB$: $A, H_c, F, B$?
+
+          $AH_c = b \cos A \approx 0.087$.
+
+          $AF = c/2 \approx 0.29$.
+
+          $AB = c \approx 0.58$.
+
+          So $H_c$ is between $A$ and $F$.
+
+          So $\angle H_c F D$?
+
+          $H_c, F, B$ collinear.
+
+          $\angle H_c F D = 180 - \angle D F B = 180 - 84 = 96^\circ$.
+
+          So Arc $H_c D = 2 \times 96 = 192^\circ$?
+
+          This is major arc.
+
+          Minor Arc $H_c D = 168^\circ$?
+
+          Let''s check consistency.
+
+          We have Arc $H_b F = 72$.
+
+          $J = H_c$.
+
+          Where is $J$?
+
+          $J$ is on Arc $F H_b$?
+
+          Arc $F H_b = 72$.
+
+          Let''s calculate Arc $F J$.
+
+          Angle $\angle F D J$?
+
+          $J = H_c$.
+
+          $\angle F D H_c$?
+
+          $D$ is mid $BC$. $H_c$ is foot from $C$.
+
+          $\triangle H_c B C$ right at $H_c$? No, $C H_c \perp AB$.
+
+          $\triangle C H_c B$ is right at $H_c$.
+
+          $D$ is mid $BC$. So $D H_c = D B = D C$.
+
+          $\triangle D H_c B$ is isosceles.
+
+          $\angle H_c D B = 180 - 2B = 180 - 120 = 60^\circ$.
+
+          So $\angle H_c D B = 60^\circ$.
+
+          $F$ is mid $AB$.
+
+          $\angle F D B = 36^\circ$ (calculated earlier, $\angle F D B = C$).
+
+          So $\angle F D H_c = \angle H_c D B - \angle F D B = 60 - 36 = 24^\circ$.
+
+          So Arc $F J = 2 \times 24 = 48^\circ$.
+
+          So $J$ lies on Arc $F H_b$?
+
+          Arc $F H_b = 72$.
+
+          Arc $F J = 48$.
+
+          So Arc $J H_b = 72 - 48 = 24^\circ$.
+
+          This matches our earlier calculation for $\wideparen{HJ} = 24^\circ$ ($H=H_b, J=H_c$).
+
+          So the order is $F, J, H_b, E, D, G$.
+
+          Wait, let''s check the sequence again.
+
+          Arcs:
+
+          $F \to J$: 48
+
+          $J \to H_b$: 24
+
+          $H_b \to E$: 96 (Calculated as $E H_b = 96$)
+
+          $E \to D$: 72
+
+          $D \to G$: 48 (Calculated as $G D = 48$)
+
+          $G \to F$: 72 (Calculated as $F G = 72$)
+
+          Sum: $48 + 24 + 96 + 72 + 48 + 72 = 360$.
+
+          Correct.
+
+
+          The question asks for $\wideparen{DE} + 2 \cdot \wideparen{HJ} + 3 \cdot \wideparen{FG}$.
+
+          $\wideparen{DE} = 72^\circ$.
+
+          $\wideparen{HJ} = 24^\circ$.
+
+          $\wideparen{FG} = 72^\circ$.
+
+
+          Value = $72 + 2(24) + 3(72)$.
+
+          $72 + 48 + 216$.
+
+          $72 + 48 = 120$.
+
+          $120 + 216 = 336$.
+
+
+          <answer>336</answer>'
+        answer: true
+    - title: Determine the positions of $G, H, J$ on the nine-point circle relative to $D, E, F$.
+      prob: 0.0371775349226845
+      logprob: -3.29205060005188
+    - title: Use coordinate geometry to find exact coordinates of $D, E, F, G, H, J$ and compute arc lengths.
+      prob: 0.003918482417733456
+      logprob: -5.542050838470459

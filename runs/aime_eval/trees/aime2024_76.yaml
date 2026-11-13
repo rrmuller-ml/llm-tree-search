@@ -1,0 +1,96 @@
+proposals:
+- title: 'Let $\triangle ABC$ have circumcenter $O$ and incenter $I$ with $\overline{IA}\perp\overline{OI}$,
+    circumradius $13$, and inradius $6$. Find $AB\cdot AC$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.999838157805471
+  logprob: -0.00016185529239010066
+  node:
+    thought: "The problem gives a specific geometric condition: $IA \\perp OI$. I need to relate this\
+      \ condition to the side lengths or angles of the triangle. Let $a, b, c$ be the side lengths $BC,\
+      \ AC, AB$ respectively. Let $R=13$ and $r=6$. The quantity to find is $bc$.\n  A known theorem relates\
+      \ the distance $OI$ to $R$ and $r$: $OI^2 = R(R-2r)$.\n  Let's calculate $OI^2$ first. $OI^2 = 13(13\
+      \ - 2\\cdot 6) = 13(1) = 13$. So $OI = \\sqrt{13}$.\n  The condition $IA \\perp OI$ implies that\
+      \ in $\\triangle OIA$, $\\angle OIA = 90^\\circ$.\n  By the Pythagorean theorem in $\\triangle OIA$,\
+      \ we have $OA^2 = OI^2 + IA^2$.\n  We know $OA = R = 13$. So $13^2 = 13 + IA^2$.\n  $169 = 13 +\
+      \ IA^2 \\implies IA^2 = 156$.\n  So the distance from the incenter to vertex A is $\\sqrt{156} =\
+      \ 2\\sqrt{39}$.\n  Now I need to relate $IA$ to the sides of the triangle.\n  The formula for the\
+      \ distance from the incenter to a vertex is $IA = \\frac{r}{\\sin(A/2)}$.\n  So $IA^2 = \\frac{r^2}{\\\
+      sin^2(A/2)} = 156$.\n  Given $r=6$, $r^2 = 36$.\n  $\\frac{36}{\\sin^2(A/2)} = 156 \\implies \\\
+      sin^2(A/2) = \\frac{36}{156}$.\n  Simplifying the fraction: $\\frac{36}{156} = \\frac{3 \\cdot 12}{13\
+      \ \\cdot 12} = \\frac{3}{13}$.\n  So $\\sin^2(A/2) = \\frac{3}{13}$.\n  From this, I can find $\\\
+      cos A$ using the identity $\\cos A = 1 - 2\\sin^2(A/2)$.\n  $\\cos A = 1 - 2(\\frac{3}{13}) = 1\
+      \ - \\frac{6}{13} = \\frac{7}{13}$.\n  Now I have $\\cos A$. I need to find $bc$.\n  We know that\
+      \ the area of the triangle $K = \\frac{1}{2}bc \\sin A$.\n  Also $K = rs = \\frac{abc}{4R}$.\n \
+      \ Alternatively, using the sine rule: $a = 2R \\sin A$, $b = 2R \\sin B$, $c = 2R \\sin C$.\n  So\
+      \ $bc = 4R^2 \\sin B \\sin C$.\n  Also, from the cosine rule: $a^2 = b^2 + c^2 - 2bc \\cos A$.\n\
+      \  This seems complicated because we don't know $b$ and $c$ individually.\n  Let's look for another\
+      \ relation involving $bc$ and $\\cos A$.\n  We know $s = \\frac{a+b+c}{2}$.\n  There is a formula\
+      \ relating $AI$, $R$, $r$ and the angles?\n  Or maybe use the formula for $AI$ in terms of sides:\
+      \ $AI^2 = \\frac{bc(s-a)}{s}$.\n  Let's verify this formula. Area $K = \\sqrt{s(s-a)(s-b)(s-c)}$.\
+      \ Also $K = rs$.\n  So $r = \\sqrt{\\frac{(s-a)(s-b)(s-c)}{s}}$.\n  $AI = r / \\sin(A/2)$.\n  $\\\
+      sin(A/2) = \\sqrt{\\frac{(s-b)(s-c)}{bc}}$.\n  So $AI^2 = \\frac{r^2}{\\frac{(s-b)(s-c)}{bc}} =\
+      \ \\frac{bc r^2}{(s-b)(s-c)}$.\n  Substitute $r^2 = \\frac{(s-a)(s-b)(s-c)}{s}$:\n  $AI^2 = \\frac{bc}{(s-b)(s-c)}\
+      \ \\cdot \\frac{(s-a)(s-b)(s-c)}{s} = \\frac{bc(s-a)}{s}$.\n  This matches.\n  So we have $AI^2\
+      \ = \\frac{bc(s-a)}{s} = 156$.\n  We need $bc$. Let $x = bc$.\n  We know $a^2 = b^2+c^2 - 2bc \\\
+      cos A$.\n  Also $a = 2R \\sin A$.\n  $\\cos A = 7/13 \\implies \\sin A = \\sqrt{1 - (7/13)^2} =\
+      \ \\sqrt{\\frac{169-49}{169}} = \\sqrt{\\frac{120}{169}} = \\frac{2\\sqrt{30}}{13}$.\n  $a = 2(13)\
+      \ \\frac{2\\sqrt{30}}{13} = 4\\sqrt{30}$.\n  So $a^2 = 16 \\cdot 30 = 480$.\n  We have $s = \\frac{a+b+c}{2}$.\n\
+      \  The equation is $\\frac{x(s-a)}{s} = 156 \\implies x(1 - \\frac{a}{s}) = 156 \\implies x \\frac{s-a}{s}\
+      \ = 156$.\n  This involves $s$ and $b,c$.\n  Let's express $s$ in terms of $x$ and $a$? No, $s$\
+      \ depends on $b+c$.\n  Let $u = b+c$. Then $s = \\frac{a+u}{2}$.\n  $x = bc$.\n  We know $(b+c)^2\
+      \ = b^2+c^2+2bc$.\n  $a^2 = b^2+c^2 - 2bc \\cos A = (b+c)^2 - 2bc - 2bc \\cos A = u^2 - 2x(1+\\\
+      cos A)$.\n  So $u^2 = a^2 + 2x(1+\\cos A)$.\n  Substitute $a^2 = 480$ and $\\cos A = 7/13$:\n  $1+\\\
+      cos A = 1 + 7/13 = 20/13$.\n  $u^2 = 480 + 2x(\\frac{20}{13}) = 480 + \\frac{40x}{13}$.\n  So $u\
+      \ = \\sqrt{480 + \\frac{40x}{13}}$.\n  Now substitute $s = \\frac{a+u}{2}$ into the $AI^2$ equation:\n\
+      \  $156 = x \\frac{\\frac{a+u}{2} - a}{\\frac{a+u}{2}} = x \\frac{u-a}{u+a}$.\n  So $156 (u+a) =\
+      \ x (u-a)$.\n  $156 u + 156 a = x u - x a$.\n  $u (x - 156) = a (x + 156)$.\n  $u = a \\frac{x+156}{x-156}$.\n\
+      \  We also have $u^2 = 480 + \\frac{40x}{13}$.\n  And $a = 4\\sqrt{30}$, so $a^2 = 480$.\n  Square\
+      \ the expression for $u$:\n  $u^2 = a^2 \\left( \\frac{x+156}{x-156} \\right)^2 = 480 \\left( \\\
+      frac{x+156}{x-156} \\right)^2$.\n  Equate the two expressions for $u^2$:\n  $480 \\left( \\frac{x+156}{x-156}\
+      \ \\right)^2 = 480 + \\frac{40x}{13}$.\n  Divide by 40:\n  $12 \\left( \\frac{x+156}{x-156} \\right)^2\
+      \ = 12 + \\frac{x}{13}$.\n  Let $y = \\frac{x+156}{x-156}$. Then $12 y^2 = 12 + \\frac{x}{13}$.\n\
+      \  We need to solve for $x$.\n  $y = \\frac{x+156}{x-156} \\implies y(x-156) = x+156 \\implies yx\
+      \ - 156y = x + 156 \\implies x(y-1) = 156(y+1) \\implies x = 156 \\frac{y+1}{y-1}$.\n  Substitute\
+      \ $x$ into the equation $12 y^2 = 12 + \\frac{1}{13} \\left( 156 \\frac{y+1}{y-1} \\right)$.\n \
+      \ $156 / 13 = 12$.\n  So $12 y^2 = 12 + 12 \\frac{y+1}{y-1}$.\n  Divide by 12:\n  $y^2 = 1 + \\\
+      frac{y+1}{y-1}$.\n  $y^2 - 1 = \\frac{y+1}{y-1}$.\n  $(y-1)(y+1) = \\frac{y+1}{y-1}$.\n  Since $x\
+      \ > 0$, $IA^2 = 156$, $r=6$, $\\sin^2(A/2) = 3/13 < 1$, so $A$ is valid.\n  $x$ must be positive.\n\
+      \  If $y+1 = 0$, then $y=-1$.\n  If $y \\neq -1$, we can divide by $y+1$:\n  $y-1 = \\frac{1}{y-1}\
+      \ \\implies (y-1)^2 = 1 \\implies y-1 = 1$ or $y-1 = -1$.\n  Case 1: $y-1 = 1 \\implies y=2$.\n\
+      \  Case 2: $y-1 = -1 \\implies y=0$.\n  Case 3: $y+1=0 \\implies y=-1$.\n  \n  Let's check the validity\
+      \ of these solutions.\n  Recall $y = \\frac{x+156}{x-156}$.\n  Since $x = bc > 0$, and $AI^2 = 156$,\
+      \ we established $x \\frac{s-a}{s} = 156$.\n  Since $s > s-a > 0$, the ratio $\\frac{s-a}{s}$ is\
+      \ between 0 and 1.\n  So $x = 156 \\frac{s}{s-a} > 156$.\n  Therefore $x > 156$.\n  This implies\
+      \ $x-156 > 0$ and $x+156 > 0$, so $y = \\frac{x+156}{x-156} > 1$.\n  So $y$ must be greater than\
+      \ 1.\n  \n  Case 1: $y=2$. This is $>1$. Valid.\n  Case 2: $y=0$. Not $>1$. Invalid.\n  Case 3:\
+      \ $y=-1$. Not $>1$. Invalid.\n  \n  So we must have $y=2$.\n  Calculate $x$:\n  $x = 156 \\frac{2+1}{2-1}\
+      \ = 156 \\cdot 3 = 468$.\n  \n  So $bc = 468$.\n  \n  Let's double check the calculations.\n  1.\
+      \ $OI^2 = R(R-2r) = 13(13-12) = 13$. Correct.\n  2. $IA \\perp OI \\implies OA^2 = OI^2 + IA^2 \\\
+      implies 169 = 13 + IA^2 \\implies IA^2 = 156$. Correct.\n  3. $IA = r/\\sin(A/2) \\implies \\sin^2(A/2)\
+      \ = 36/156 = 3/13$. Correct.\n  4. $\\cos A = 1 - 2(3/13) = 7/13$. Correct.\n  5. $\\sin A = \\\
+      sqrt{1 - 49/169} = \\sqrt{120}/13$. Correct.\n  6. $a = 2R \\sin A = 26 \\cdot \\frac{\\sqrt{120}}{13}\
+      \ = 2\\sqrt{120} = 4\\sqrt{30}$. Correct.\n  7. $a^2 = 16 \\cdot 30 = 480$. Correct.\n  8. Formula\
+      \ $AI^2 = \\frac{bc(s-a)}{s}$. Correct.\n  9. Relation $u^2 = a^2 + 2bc(1+\\cos A)$.\n     $a^2\
+      \ = b^2+c^2 - 2bc \\cos A = (b+c)^2 - 2bc - 2bc \\cos A = u^2 - 2bc(1+\\cos A)$.\n     $u^2 = a^2\
+      \ + 2x(1+\\cos A)$. Correct.\n  10. $1+\\cos A = 20/13$. Correct.\n  11. Equation $156 = x \\frac{u-a}{u+a}$.\
+      \ Correct.\n  12. Derivation $u = a \\frac{x+156}{x-156}$.\n      $156(u+a) = x(u-a) \\implies 156u\
+      \ + 156a = xu - xa \\implies u(x-156) = a(x+156) \\implies u = a \\frac{x+156}{x-156}$. Correct.\n\
+      \  13. Squaring: $u^2 = a^2 \\left( \\frac{x+156}{x-156} \\right)^2$. Correct.\n  14. Equating:\
+      \ $a^2 y^2 = a^2 + \\frac{40x}{13}$.\n      $480 y^2 = 480 + \\frac{40x}{13}$.\n      $12 y^2 =\
+      \ 12 + \\frac{x}{13}$. Correct.\n  15. Solving for $y$: $y=2$.\n      $x = 156 \\frac{3}{1} = 468$.\
+      \ Correct.\n  16. Check if $x=468$ is consistent with triangle inequalities.\n      $bc = 468$.\n\
+      \      $u = b+c$.\n      $u = a \\frac{468+156}{468-156} = 4\\sqrt{30} \\frac{624}{312} = 4\\sqrt{30}\
+      \ \\cdot 2 = 8\\sqrt{30}$.\n      $u^2 = 64 \\cdot 30 = 1920$.\n      From other formula: $u^2 =\
+      \ 480 + \\frac{40(468)}{13}$.\n      $468/13 = 36$.\n      $40 \\cdot 36 = 1440$.\n      $480 +\
+      \ 1440 = 1920$. Matches.\n      \n      Now we have $b+c = 8\\sqrt{30}$ and $bc = 468$.\n      $b,c$\
+      \ are roots of $T^2 - 8\\sqrt{30}T + 468 = 0$.\n      Discriminant $D = (8\\sqrt{30})^2 - 4(468)\
+      \ = 1920 - 1872 = 48$.\n      $b,c = \\frac{8\\sqrt{30} \\pm \\sqrt{48}}{2} = 4\\sqrt{30} \\pm \\\
+      sqrt{12} = 4\\sqrt{30} \\pm 2\\sqrt{3}$.\n      Both are positive.\n      Check triangle inequality:\
+      \ $b+c > a \\implies 8\\sqrt{30} > 4\\sqrt{30}$ (True).\n      $a+b > c$?\n      $a = 4\\sqrt{30}$.\n\
+      \      $b \\approx 4(5.47) + 2(1.73) = 21.88 + 3.46 = 25.34$.\n      $c \\approx 21.88 - 3.46 =\
+      \ 18.42$.\n      $a \\approx 21.88$.\n      $a+c = 21.88 + 18.42 = 40.3 > b$.\n      $a+b = 21.88\
+      \ + 25.34 = 47.22 > c$.\n      So a valid triangle exists.\n      \n      The value is 468.\n\n\
+      <answer>468</answer>"
+    answer: true

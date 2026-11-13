@@ -1,0 +1,524 @@
+proposals:
+- title: 'Let $\triangle ABC$ be a right triangle with $\angle A = 90^\circ$ and $BC = 38$. There exist
+    points $K$ and $L$ inside the triangle such that
+
+    $$AK = AL = BK = CL = KL = 14.$$
+
+    The area of the quadrilateral $BKLC$ can be expressed as $n\sqrt{3}$ for some positive integer $n$.
+    Find $n$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9999277285165635
+  logprob: -7.227409514598548e-05
+  node:
+    thought: 'The problem defines the positions of points K and L relative to vertices A, B, and C. Specifically,
+      $AK=BK=KL=AL=14$ and $CL=14$. We need to find the area of quadrilateral $BKLC$. Let''s first understand
+      the geometry of $\triangle ABK$ and $\triangle ABL$ or similar sub-triangles. Note that $AK=AL=BK=14$
+      and $KL=14$. This implies $\triangle AKL$ is equilateral with side 14. Also $\triangle ABK$ is isosceles
+      with $AK=BK=14$. Similarly, $AL=CL=14$, so $\triangle ALC$ is isosceles with $AL=CL=14$.
+
+      Let''s set up a coordinate system. Let $A$ be the origin $(0,0)$. Since $\angle A = 90^\circ$, we
+      can place $B$ on the x-axis and $C$ on the y-axis. Let $B = (c, 0)$ and $C = (0, b)$. Then $BC =
+      \sqrt{b^2+c^2} = 38$.
+
+      Point $K$ satisfies $AK=14$ and $BK=14$. So $K$ lies on the perpendicular bisector of $AB$. Also
+      $K$ is distance 14 from A.
+
+      Point $L$ satisfies $AL=14$ and $CL=14$. So $L$ lies on the perpendicular bisector of $AC$. Also
+      $L$ is distance 14 from A.
+
+      Let $K = (x_K, y_K)$ and $L = (x_L, y_L)$.
+
+      Since $AK=14$, $x_K^2 + y_K^2 = 14^2 = 196$.
+
+      Since $BK=14$, $(x_K-c)^2 + y_K^2 = 196$.
+
+      Subtracting the two equations: $(x_K-c)^2 - x_K^2 = 0 \Rightarrow -2cx_K + c^2 = 0 \Rightarrow x_K
+      = c/2$.
+
+      Then $(c/2)^2 + y_K^2 = 196 \Rightarrow y_K^2 = 196 - c^2/4$. Since K is inside the triangle, $y_K
+      > 0$. So $y_K = \sqrt{196 - c^2/4}$.
+
+      Similarly for L: $AL=14 \Rightarrow x_L^2 + y_L^2 = 196$.
+
+      $CL=14 \Rightarrow x_L^2 + (y_L-b)^2 = 196$.
+
+      Subtracting: $(y_L-b)^2 - y_L^2 = 0 \Rightarrow -2by_L + b^2 = 0 \Rightarrow y_L = b/2$.
+
+      Then $x_L^2 + (b/2)^2 = 196 \Rightarrow x_L^2 = 196 - b^2/4$. Since L is inside, $x_L > 0$. So $x_L
+      = \sqrt{196 - b^2/4}$.
+
+      So $K = (c/2, \sqrt{196 - c^2/4})$ and $L = (\sqrt{196 - b^2/4}, b/2)$.
+
+      We are given $KL=14$. So $KL^2 = 196$.
+
+      $KL^2 = (x_K - x_L)^2 + (y_K - y_L)^2 = 196$.
+
+      This equation relates $b$ and $c$. We also know $b^2 + c^2 = 38^2 = 1444$.
+
+      Let $u = c/2$ and $v = b/2$. Then $c=2u, b=2v$.
+
+      $b^2+c^2 = 4(u^2+v^2) = 1444 \Rightarrow u^2+v^2 = 361$.
+
+      $K = (u, \sqrt{196-u^2})$ and $L = (\sqrt{196-v^2}, v)$.
+
+      Let $y_K = \sqrt{196-u^2}$ and $x_L = \sqrt{196-v^2}$.
+
+      Note that $u^2+v^2 = 361$.
+
+      The condition $KL^2 = 196$ becomes:
+
+      $(u - \sqrt{196-v^2})^2 + (\sqrt{196-u^2} - v)^2 = 196$.
+
+      Let $\alpha$ be the angle such that $u = 14 \cos \alpha$? No, $u^2 \le 196$ for real $y_K$. So $u
+      \le 14$. Similarly $v \le 14$.
+
+      Let $u = 14 \cos \theta$ and $\sqrt{196-u^2} = 14 \sin \theta$ for some $\theta \in (0, \pi/2)$.
+
+      Then $K = (14 \cos \theta, 14 \sin \theta)$. This makes sense as $AK=14$.
+
+      Similarly, let $v = 14 \cos \phi$? No, $x_L = \sqrt{196-v^2}$ and $y_L = v$.
+
+      Let $v = 14 \sin \psi$ and $\sqrt{196-v^2} = 14 \cos \psi$.
+
+      Then $L = (14 \cos \psi, 14 \sin \psi)$.
+
+      Wait, if $K = (14 \cos \theta, 14 \sin \theta)$, then $x_K = 14 \cos \theta = c/2 \Rightarrow c
+      = 28 \cos \theta$.
+
+      $y_K = 14 \sin \theta = \sqrt{196 - c^2/4}$.
+
+      If $L = (14 \cos \psi, 14 \sin \psi)$, then $y_L = 14 \sin \psi = b/2 \Rightarrow b = 28 \sin \psi$.
+
+      $x_L = 14 \cos \psi = \sqrt{196 - b^2/4}$.
+
+      The distance $KL=14$ means the chord length between angles $\theta$ and $\psi$ on the circle of
+      radius 14 is 14.
+
+      Chord length $= 2R \sin(\Delta / 2) = 28 \sin(|\theta - \psi|/2) = 14$.
+
+      $\sin(|\theta - \psi|/2) = 1/2 \Rightarrow |\theta - \psi|/2 = 30^\circ \Rightarrow |\theta - \psi|
+      = 60^\circ = \pi/3$.
+
+      So the angle between vectors $\vec{AK}$ and $\vec{AL}$ is $60^\circ$.
+
+      Since $AK=AL=14$ and $\angle KAL = 60^\circ$, $\triangle AKL$ is equilateral, which matches $KL=14$.
+
+      Now we need to determine the specific positions.
+
+      We have $c = 28 \cos \theta$ and $b = 28 \sin \psi$.
+
+      Also $b^2 + c^2 = 38^2 = 1444$.
+
+      $(28 \sin \psi)^2 + (28 \cos \theta)^2 = 1444$.
+
+      $784 (\sin^2 \psi + \cos^2 \theta) = 1444$.
+
+      $\sin^2 \psi + \cos^2 \theta = \frac{1444}{784} = \frac{361}{196} \approx 1.84$.
+
+      We know $\psi = \theta \pm 60^\circ$.
+
+      Let''s assume $\psi = \theta + 60^\circ$ or $\theta - 60^\circ$. Due to symmetry of b and c roles
+      in the sum of squares (mostly), let''s check.
+
+      Actually, $K$ is closer to B (on x-axis side) and L is closer to C (on y-axis side).
+
+      $K = (c/2, y_K)$. Angle of K is $\theta$. $\tan \theta = y_K / (c/2)$.
+
+      $L = (x_L, b/2)$. Angle of L is $\psi$. $\tan \psi = (b/2) / x_L$.
+
+      Since K and L are inside the triangle, $\theta$ and $\psi$ are acute.
+
+      Also $c < 38$ and $b < 38$.
+
+      $14 \cos \theta = c/2 < 19 \Rightarrow \cos \theta < 19/14 > 1$. This doesn''t constrain much.
+
+      However, $u = c/2 \le 14 \Rightarrow c \le 28$.
+
+      $v = b/2 \le 14 \Rightarrow b \le 28$.
+
+      So $\cos \theta = c/28 \le 1$ and $\sin \psi = b/28 \le 1$.
+
+      Equation: $\sin^2 \psi + \cos^2 \theta = \frac{361}{196}$.
+
+      Let $\psi = \theta + \delta$ with $\delta = \pm 60^\circ$.
+
+      $\sin^2(\theta \pm 60^\circ) + \cos^2 \theta = \frac{361}{196}$.
+
+      $\sin^2 \theta \cos^2 60 + \cos^2 \theta \sin^2 60 \pm \sin \theta \cos \theta \sin 120 + \cos^2
+      \theta = \frac{361}{196}$.
+
+      $\frac{1}{4} \sin^2 \theta + \frac{3}{4} \cos^2 \theta \pm \frac{\sqrt{3}}{2} \sin \theta \cos \theta
+      + \cos^2 \theta = \frac{361}{196}$.
+
+      $\frac{1}{4} \sin^2 \theta + \frac{7}{4} \cos^2 \theta \pm \frac{\sqrt{3}}{2} \sin \theta \cos \theta
+      = \frac{361}{196}$.
+
+      Multiply by 4:
+
+      $\sin^2 \theta + 7 \cos^2 \theta \pm 2\sqrt{3} \sin \theta \cos \theta = \frac{361}{49}$.
+
+      $\sin^2 \theta + \cos^2 \theta + 6 \cos^2 \theta \pm 2\sqrt{3} \sin \theta \cos \theta = \frac{361}{49}$.
+
+      $1 + 6 \cos^2 \theta \pm 2\sqrt{3} \sin \theta \cos \theta = \frac{361}{49}$.
+
+      $6 \cos^2 \theta \pm 2\sqrt{3} \sin \theta \cos \theta = \frac{361-49}{49} = \frac{312}{49}$.
+
+      Divide by 2:
+
+      $3 \cos^2 \theta \pm \sqrt{3} \sin \theta \cos \theta = \frac{156}{49}$.
+
+      Let $t = \tan \theta$. Divide by $\cos^2 \theta$:
+
+      $3 \pm \sqrt{3} \tan \theta = \frac{156}{49} \sec^2 \theta = \frac{156}{49} (1+t^2)$.
+
+      $3 \pm \sqrt{3} t = \frac{156}{49} (1+t^2)$.
+
+      $49(3 \pm \sqrt{3} t) = 156 (1+t^2)$.
+
+      $147 \pm 49\sqrt{3} t = 156 + 156 t^2$.
+
+      $156 t^2 \mp 49\sqrt{3} t + 9 = 0$.
+
+      This is a quadratic in $t$.
+
+      Case 1: $156 t^2 - 49\sqrt{3} t + 9 = 0$.
+
+      Discriminant $D = (49\sqrt{3})^2 - 4(156)(9) = 2401(3) - 5616 = 7203 - 5616 = 1587$.
+
+      $\sqrt{1587} = \sqrt{3 \cdot 529} = 23\sqrt{3}$.
+
+      $t = \frac{49\sqrt{3} \pm 23\sqrt{3}}{312} = \frac{\sqrt{3}(49 \pm 23)}{312}$.
+
+      $t_1 = \frac{72\sqrt{3}}{312} = \frac{3\sqrt{3}}{13}$.
+
+      $t_2 = \frac{26\sqrt{3}}{312} = \frac{\sqrt{3}}{12}$.
+
+      Case 2: $156 t^2 + 49\sqrt{3} t + 9 = 0$.
+
+      Roots will be negative, but $\theta$ is acute, so $t > 0$. So we take Case 1.
+
+      So $\tan \theta = \frac{3\sqrt{3}}{13}$ or $\frac{\sqrt{3}}{12}$.
+
+      Which one corresponds to which sign in $\sin^2 \psi + \cos^2 \theta$?
+
+      The equation was derived from $\psi = \theta + 60$ or $\theta - 60$.
+
+      Let''s check the values.
+
+      If $\tan \theta = \frac{\sqrt{3}}{12}$, then $\cos^2 \theta = \frac{1}{1+\tan^2 \theta} = \frac{1}{1+3/144}
+      = \frac{144}{147} = \frac{48}{49}$.
+
+      $\cos \theta = \frac{4\sqrt{3}}{7}$.
+
+      $c = 28 \cos \theta = 16\sqrt{3}$.
+
+      $b^2 = 1444 - c^2 = 1444 - 768 = 676 \Rightarrow b = 26$.
+
+      Check $\psi$. $\tan \theta = \frac{1}{4\sqrt{3}}$.
+
+      If $\psi = \theta + 60$, $\tan \psi = \frac{\tan \theta + \sqrt{3}}{1 - \sqrt{3}\tan \theta} = \frac{\frac{1}{4\sqrt{3}}
+      + \sqrt{3}}{1 - \frac{1}{4}} = \frac{\frac{13}{4\sqrt{3}}}{\frac{3}{4}} = \frac{13}{3\sqrt{3}}$.
+
+      Then $\sin \psi = \frac{\tan \psi}{\sqrt{1+\tan^2 \psi}} = \frac{\frac{13}{3\sqrt{3}}}{\sqrt{1+\frac{169}{27}}}
+      = \frac{\frac{13}{3\sqrt{3}}}{\sqrt{\frac{196}{27}}} = \frac{13}{3\sqrt{3}} \cdot \frac{3\sqrt{3}}{14}
+      = \frac{13}{14}$.
+
+      $b = 28 \sin \psi = 28(13/14) = 26$. Matches.
+
+      So this solution is valid.
+
+      The other root $\tan \theta = \frac{3\sqrt{3}}{13}$.
+
+      $\cos^2 \theta = \frac{1}{1+27/169} = \frac{169}{196}$.
+
+      $\cos \theta = \frac{13}{14}$.
+
+      $c = 28(13/14) = 26$.
+
+      $b^2 = 1444 - 676 = 768 \Rightarrow b = \sqrt{768} = 16\sqrt{3}$.
+
+      This is just swapping b and c. The geometry is symmetric.
+
+      So we have two configurations which are mirror images. The area of BKLC will be the same.
+
+
+      Now, calculate the area of quadrilateral $BKLC$.
+
+      The vertices are $B(c,0)$, $K(c/2, y_K)$, $L(x_L, b/2)$, $C(0,b)$.
+
+      We can compute the area of $\triangle ABC$ and subtract the areas of $\triangle ABK$, $\triangle
+      ACK$? No, K and L are inside.
+
+      The quadrilateral is $BKLC$. The vertices in order around the perimeter?
+
+      B is $(c,0)$, C is $(0,b)$. K is closer to AB, L is closer to AC.
+
+      Let''s check the position.
+
+      $K = (c/2, y_K)$. $L = (x_L, b/2)$.
+
+      Area($BKLC$) = Area($\triangle ABC$) - Area($\triangle ABK$) - Area($\triangle ACL$) - Area($\triangle
+      AKL$)?
+
+      Let''s verify if K and L partition the triangle nicely.
+
+      The union of $\triangle ABK$, $\triangle ACK$? No.
+
+      The points K and L are inside.
+
+      Area($BKLC$) can be calculated by splitting into $\triangle BKC$ and $\triangle KLC$? Or $\triangle
+      BKL$ and $\triangle BLC$?
+
+      Let''s use coordinates.
+
+      $B = (c, 0)$, $K = (c/2, y_K)$, $L = (x_L, b/2)$, $C = (0, b)$.
+
+      Area = $\frac{1}{2} | (x_B y_K - y_B x_K) + (x_K y_L - y_K x_L) + (x_L y_C - y_L x_C) + (x_C y_B
+      - y_C x_B) |$.
+
+      $x_B=c, y_B=0$.
+
+      $x_K=c/2, y_K=y_K$.
+
+      $x_L=x_L, y_L=b/2$.
+
+      $x_C=0, y_C=b$.
+
+      Term 1: $c y_K - 0 = c y_K$.
+
+      Term 2: $(c/2)(b/2) - y_K x_L = \frac{cb}{4} - y_K x_L$.
+
+      Term 3: $x_L b - (b/2)(0) = b x_L$.
+
+      Term 4: $0 - b c = -bc$.
+
+      Sum = $c y_K + \frac{cb}{4} - y_K x_L + b x_L - bc = c y_K - bc + \frac{cb}{4} + x_L(b - y_K)$.
+
+      Wait, the order of vertices for polygon area formula must be counter-clockwise or clockwise.
+
+      Let''s trace: B(c,0) -> K(c/2, y_K) -> L(x_L, b/2) -> C(0,b) -> B(c,0).
+
+      Is this convex?
+
+      Let''s plug in the values from Solution 1:
+
+      $c = 16\sqrt{3}$, $b = 26$.
+
+      $\cos \theta = \frac{4\sqrt{3}}{7}$, $\sin \theta = \sqrt{1 - \frac{48}{49}} = \frac{1}{7}$.
+
+      $y_K = 14 \sin \theta = 2$.
+
+      $x_K = c/2 = 8\sqrt{3}$. Check $14 \cos \theta = 14(4\sqrt{3}/7) = 8\sqrt{3}$. Correct.
+
+      $\tan \psi = \frac{13}{3\sqrt{3}}$.
+
+      $\sin \psi = \frac{13}{14}$, $\cos \psi = \frac{\sqrt{27}}{14} = \frac{3\sqrt{3}}{14}$.
+
+      $x_L = 14 \cos \psi = 3\sqrt{3}$.
+
+      $y_L = b/2 = 13$. Check $14 \sin \psi = 13$. Correct.
+
+      So coordinates:
+
+      $B = (16\sqrt{3}, 0)$.
+
+      $K = (8\sqrt{3}, 2)$.
+
+      $L = (3\sqrt{3}, 13)$.
+
+      $C = (0, 26)$.
+
+
+      Let''s compute the area using the shoelace formula.
+
+      $x_B y_K - y_B x_K = 16\sqrt{3}(2) - 0 = 32\sqrt{3}$.
+
+      $x_K y_L - y_K x_L = 8\sqrt{3}(13) - 2(3\sqrt{3}) = 104\sqrt{3} - 6\sqrt{3} = 98\sqrt{3}$.
+
+      $x_L y_C - y_L x_C = 3\sqrt{3}(26) - 13(0) = 78\sqrt{3}$.
+
+      $x_C y_B - y_C x_B = 0 - 26(16\sqrt{3}) = -416\sqrt{3}$.
+
+      Sum = $32\sqrt{3} + 98\sqrt{3} + 78\sqrt{3} - 416\sqrt{3}$.
+
+      $32 + 98 + 78 = 208$.
+
+      $208 - 416 = -208\sqrt{3}$.
+
+      Area = $\frac{1}{2} | -208\sqrt{3} | = 104\sqrt{3}$.
+
+
+      Let''s double check with another method.
+
+      Area($\triangle ABC$) = $\frac{1}{2} bc = \frac{1}{2} (16\sqrt{3})(26) = 208\sqrt{3}$.
+
+      Area($\triangle ABK$) = $\frac{1}{2} \text{base} \times \text{height} = \frac{1}{2} c \cdot y_K
+      = \frac{1}{2} (16\sqrt{3})(2) = 16\sqrt{3}$.
+
+      Area($\triangle ACL$) = $\frac{1}{2} \text{base} \times \text{height} = \frac{1}{2} b \cdot x_L
+      = \frac{1}{2} (26)(3\sqrt{3}) = 39\sqrt{3}$.
+
+      Area($\triangle AKL$) = Equilateral triangle side 14. Area = $\frac{\sqrt{3}}{4} 14^2 = 49\sqrt{3}$.
+
+      Sum of these three areas = $16\sqrt{3} + 39\sqrt{3} + 49\sqrt{3} = 104\sqrt{3}$.
+
+      Area($BKLC$) = Area($\triangle ABC$) - (Area($\triangle ABK$) + Area($\triangle ACL$) + Area($\triangle
+      AKL$))?
+
+      Let''s check if the triangles partition $\triangle ABC$.
+
+      The vertices of the inner polygon are K and L.
+
+      The triangles $\triangle ABK$, $\triangle ACL$, $\triangle AKL$ meet at A?
+
+      $\triangle ABK$ covers the region near AB.
+
+      $\triangle ACL$ covers the region near AC.
+
+      $\triangle AKL$ covers the region near A between K and L.
+
+      Do they overlap?
+
+      K is at angle $\theta$ where $\tan \theta = \frac{1}{4\sqrt{3}} \approx 0.144$. $\theta \approx
+      8^\circ$.
+
+      L is at angle $\psi$ where $\tan \psi = \frac{13}{3\sqrt{3}} \approx 2.5$. $\psi \approx 68^\circ$.
+
+      Angle of K is small, close to AB (angle 0).
+
+      Angle of L is larger, closer to AC (angle 90).
+
+      The union of $\triangle ABK$, $\triangle AKL$, $\triangle ACL$ covers the angular sector from 0
+      to $\psi$?
+
+      Wait, $\triangle ABK$ spans angles from 0 to $\theta$? No, B is on x-axis. K is at angle $\theta$.
+      The triangle ABK is bounded by AB (angle 0), AK (angle $\theta$) and BK.
+
+      $\triangle ACL$ is bounded by AC (angle 90), AL (angle $\psi$) and CL.
+
+      $\triangle AKL$ is bounded by AK (angle $\theta$), AL (angle $\psi$) and KL.
+
+      The remaining region is bounded by BK, KL, LC and CB. This is the quadrilateral BKLC.
+
+      So yes, Area($BKLC$) = Area($\triangle ABC$) - Area($\triangle ABK$) - Area($\triangle AKL$) - Area($\triangle
+      ACL$).
+
+      Calculation:
+
+      $208\sqrt{3} - 16\sqrt{3} - 49\sqrt{3} - 39\sqrt{3} = 208\sqrt{3} - 104\sqrt{3} = 104\sqrt{3}$.
+
+      This matches the shoelace result.
+
+
+      So $n = 104$.
+
+
+      Let''s quickly check the other solution case to ensure consistency.
+
+      $c=26, b=16\sqrt{3}$.
+
+      Area($\triangle ABC$) = $208\sqrt{3}$.
+
+      $\tan \theta = \frac{3\sqrt{3}}{13}$.
+
+      $\cos \theta = \frac{13}{14}, \sin \theta = \frac{\sqrt{3}}{14}$.
+
+      $K = (c/2, 14 \sin \theta) = (13, \sqrt{3})$.
+
+      $\psi = \theta - 60$? Or $\theta + 60$?
+
+      In previous case $\psi = \theta + 60$. Here symmetry suggests we swap roles.
+
+      If we swap b and c, we swap x and y coordinates essentially (reflection across $y=x$).
+
+      The area should be the same.
+
+      Area($\triangle ABK$) = $\frac{1}{2} c y_K = \frac{1}{2} (26)(\sqrt{3}) = 13\sqrt{3}$.
+
+      Area($\triangle ACL$) = $\frac{1}{2} b x_L$.
+
+      We need coordinates of L.
+
+      Symmetry: $x_L$ in this case corresponds to $y_K$ in previous?
+
+      In prev case $K=(8\sqrt{3}, 2)$, $L=(3\sqrt{3}, 13)$.
+
+      Swap x and y: $K''=(2, 8\sqrt{3})$, $L''=(13, 3\sqrt{3})$.
+
+      Check if $K''$ is valid for $c=26$.
+
+      $x_{K''} = 2$. But $x_K$ should be $c/2 = 13$.
+
+      So simple reflection swaps the labels of K and L relative to the axes?
+
+      If $c=26$, $x_K = 13$.
+
+      In the first solution, $x_K = 8\sqrt{3} \approx 13.8$. $c=16\sqrt{3} \approx 27.7$.
+
+      In the second solution, $c=26$, $x_K = 13$.
+
+      $y_K = \sqrt{196 - 13^2} = \sqrt{196-169} = \sqrt{27} = 3\sqrt{3}$.
+
+      So $K = (13, 3\sqrt{3})$.
+
+      $L$: $y_L = b/2 = 8\sqrt{3}$.
+
+      $x_L = \sqrt{196 - (8\sqrt{3})^2} = \sqrt{196 - 192} = 2$.
+
+      So $L = (2, 8\sqrt{3})$.
+
+      Area($\triangle ABK$) = $\frac{1}{2} (26)(3\sqrt{3}) = 39\sqrt{3}$.
+
+      Area($\triangle ACL$) = $\frac{1}{2} (16\sqrt{3})(2) = 16\sqrt{3}$.
+
+      Area($\triangle AKL$) = $49\sqrt{3}$.
+
+      Sum = $39+16+49 = 104\sqrt{3}$.
+
+      Area($BKLC$) = $208\sqrt{3} - 104\sqrt{3} = 104\sqrt{3}$.
+
+      Consistent.
+
+
+      The value $n$ is 104.'
+    proposals:
+    - title: Calculate coordinates of K and L
+      prob: 0.5378451099686833
+      logprob: -0.6201846599578857
+    - title: Determine relationship between angles of K and L
+      prob: 0.01264890159040726
+      logprob: -4.370184898376465
+    - title: Solve for dimensions of triangle ABC
+      prob: 0.030343144755417703
+      logprob: -3.4951846599578857
+    - title: Compute areas of sub-triangles and subtract from ABC
+      prob: 0.41887419281473637
+      logprob: -0.8701846599578857
+      node:
+        thought: We calculated Area($BKLC$) = 104$\sqrt{3}$. The question asks for n where Area = $n\sqrt{3}$.
+          So n = 104.
+        proposals:
+        - title: Verify the calculation one last time
+          prob: 0.9994178589059841
+          logprob: -0.0005823106039315462
+          node:
+            thought: 'Calculation:
+
+              Area(ABC) = 208$\sqrt{3}$.
+
+              Area(ABK) = 16$\sqrt{3}$.
+
+              Area(ACL) = 39$\sqrt{3}$.
+
+              Area(AKL) = 49$\sqrt{3}$.
+
+              Sum of subtracted areas = 16+39+49 = 104.
+
+              208 - 104 = 104.
+
+              The result is robust.
+
+              <answer>104</answer>'
+            answer: true

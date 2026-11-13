@@ -1,0 +1,290 @@
+proposals:
+- title: 'Find the number of ways to place a digit in each cell of a 2x3 grid so that the sum of the two
+    numbers formed by reading left to right is $999$, and the sum of the three numbers formed by reading
+    top to bottom is $99$. The grid below is an example of such an arrangement because $8+991=999$ and
+    $9+9+81=99$.
+
+    \[\begin{array}{|c|c|c|} \hline 0 & 0 & 8 \\ \hline 9 & 9 & 1 \\ \hline \end{array}\]
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9998955630914147
+  logprob: -0.00010444236249895766
+  node:
+    thought: 'Let the grid be represented as:
+
+      \[
+
+      \begin{array}{|c|c|c|}
+
+      \hline
+
+      a & b & c \\
+
+      \hline
+
+      d & e & f \\
+
+      \hline
+
+      \end{array}
+
+      \]
+
+      The numbers formed by reading left to right are $100a + 10b + c$ and $100d + 10e + f$.
+
+      The condition is $(100a + 10b + c) + (100d + 10e + f) = 999$.
+
+      The numbers formed by reading top to bottom are single-digit numbers $a, b, c$? No, the problem
+      says "sum of the three numbers formed by reading top to bottom". Looking at the example:
+
+      Top row: 0, 0, 8. Bottom row: 9, 9, 1.
+
+      Left to right sums: $008 + 991 = 8 + 991 = 999$. This implies leading zeros are allowed and the
+      numbers are treated as 3-digit integers (or just integer values). So row 1 is $100a+10b+c$ and row
+      2 is $100d+10e+f$.
+
+      Top to bottom sums: The example says $9+9+81=99$. Wait.
+
+      Column 1: 0 over 9. Number? The example sum is $9+9+81=99$.
+
+      Let''s re-read carefully. "sum of the three numbers formed by reading top to bottom".
+
+      In the example:
+
+      Col 1: 0, 9. Does this form the number 9? Or 09?
+
+      Col 2: 0, 9. Does this form the number 9? Or 09?
+
+      Col 3: 8, 1. Does this form the number 81?
+
+      The sum is $9 + 9 + 81 = 99$.
+
+      This implies that for each column, the top digit is the units place? No, 8 and 1 form 81. So top
+      digit is tens, bottom is units.
+
+      So Col 1: top 0, bottom 9 -> number 09 = 9.
+
+      Col 2: top 0, bottom 9 -> number 09 = 9.
+
+      Col 3: top 8, bottom 1 -> number 81.
+
+      So the "numbers formed by reading top to bottom" are $10a+d$, $10b+e$, and $10c+f$.
+
+      The condition is $(10a+d) + (10b+e) + (10c+f) = 99$.
+
+
+      Let''s verify the first condition again with the example.
+
+      Row 1: 0, 0, 8 -> Number $008 = 8$.
+
+      Row 2: 9, 9, 1 -> Number $991$.
+
+      Sum: $8 + 991 = 999$.
+
+      So the first condition is:
+
+      $(100a + 10b + c) + (100d + 10e + f) = 999$.
+
+      The second condition is:
+
+      $(10a + d) + (10b + e) + (10c + f) = 99$.
+
+
+      We need to find the number of tuples $(a,b,c,d,e,f)$ with digits $0-9$ satisfying these two equations.
+
+
+      Let''s analyze the first equation:
+
+      $100(a+d) + 10(b+e) + (c+f) = 999$.
+
+      Since $a,b,c,d,e,f$ are digits, $a+d \le 18$, $b+e \le 18$, $c+f \le 18$.
+
+      For the sum to be 999, we can look at it digit by digit with carries.
+
+      Let $S_1 = a+d$, $S_2 = b+e$, $S_3 = c+f$.
+
+      The equation is $100 S_1 + 10 S_2 + S_3 = 999$.
+
+      This implies specific values for $S_1, S_2, S_3$ considering carries from lower digits?
+
+      Actually, no. $a,b,c,d,e,f$ are independent digits. The sum is just an integer sum.
+
+      $100(a+d) + 10(b+e) + (c+f) = 999$.
+
+      Let $K_1 = a+d$, $K_2 = b+e$, $K_3 = c+f$.
+
+      $100 K_1 + 10 K_2 + K_3 = 999$.
+
+      Since $0 \le K_i \le 18$, let''s determine possible values for $K_1, K_2, K_3$.
+
+      From the last digit, $K_3$ must end in 9. So $K_3 \in \{9, 19, \dots\}$. Since max 18, $K_3 = 9$.
+
+      Then $100 K_1 + 10 K_2 + 9 = 999 \implies 100 K_1 + 10 K_2 = 990 \implies 10 K_1 + K_2 = 99$.
+
+      From the last digit of this new equation, $K_2$ must end in 9. So $K_2 \in \{9, 19, \dots\}$. Max
+      18, so $K_2 = 9$.
+
+      Then $10 K_1 + 9 = 99 \implies 10 K_1 = 90 \implies K_1 = 9$.
+
+      So, the first condition implies:
+
+      $a+d = 9$
+
+      $b+e = 9$
+
+      $c+f = 9$
+
+
+      Now let''s check the second condition with these constraints.
+
+      $(10a+d) + (10b+e) + (10c+f) = 99$.
+
+      Substitute $d=9-a, e=9-b, f=9-c$:
+
+      $(10a + 9-a) + (10b + 9-b) + (10c + 9-c) = 99$
+
+      $(9a + 9) + (9b + 9) + (9c + 9) = 99$
+
+      $9a + 9b + 9c + 27 = 99$
+
+      $9(a+b+c) = 72$
+
+      $a+b+c = 8$.
+
+
+      So the problem reduces to finding the number of non-negative integer solutions to:
+
+      1. $a+d=9 \implies d=9-a$. Since $0 \le d \le 9$, we must have $0 \le a \le 9$.
+
+      2. $b+e=9 \implies e=9-b$. Since $0 \le e \le 9$, we must have $0 \le b \le 9$.
+
+      3. $c+f=9 \implies f=9-c$. Since $0 \le f \le 9$, we must have $0 \le c \le 9$.
+
+      4. $a+b+c = 8$.
+
+      5. $a,b,c$ are digits, i.e., integers from 0 to 9.
+
+
+      Since $a,b,c \ge 0$ and their sum is 8, each variable is automatically $\le 8$, which is $\le 9$.
+      So the constraints $0 \le a,b,c \le 9$ are satisfied for any non-negative solution to $a+b+c=8$.
+
+
+      The number of solutions is the number of non-negative integer solutions to $a+b+c=8$.
+
+      This is a stars and bars problem.
+
+      Number of solutions = $\binom{n+k-1}{k-1}$ where $n=8$ and $k=3$.
+
+      $\binom{8+3-1}{3-1} = \binom{10}{2}$.
+
+      $\binom{10}{2} = \frac{10 \times 9}{2} = 45$.
+
+
+      Let''s double check if there are any other possibilities for the first equation.
+
+      $100 K_1 + 10 K_2 + K_3 = 999$.
+
+      We assumed no carries between the "groups" $K_1, K_2, K_3$ in the standard decimal representation
+      sense, but $K_i$ are sums of digits, not single digits.
+
+      However, the equation $100 K_1 + 10 K_2 + K_3 = 999$ is an integer equality.
+
+      Let''s verify uniqueness of $K_1, K_2, K_3$.
+
+      $K_3 = 999 - 100 K_1 - 10 K_2$.
+
+      Since $0 \le K_3 \le 18$,
+
+      $0 \le 999 - 100 K_1 - 10 K_2 \le 18$.
+
+      $981 \le 100 K_1 + 10 K_2 \le 999$.
+
+      Divide by 10:
+
+      $98.1 \le 10 K_1 + K_2 \le 99.9$.
+
+      Since $K_1, K_2$ are integers, $10 K_1 + K_2$ must be an integer.
+
+      The only integer in $[98.1, 99.9]$ is 99.
+
+      So $10 K_1 + K_2 = 99$.
+
+      This implies $K_2 = 99 - 10 K_1$.
+
+      Since $0 \le K_2 \le 18$:
+
+      $0 \le 99 - 10 K_1 \le 18$.
+
+      $10 K_1 \le 99 \implies K_1 \le 9.9 \implies K_1 \le 9$.
+
+      $10 K_1 \ge 99 - 18 = 81 \implies K_1 \ge 8.1 \implies K_1 \ge 9$.
+
+      So $K_1 = 9$.
+
+      Then $K_2 = 99 - 10(9) = 9$.
+
+      Then $K_3 = 999 - 100(9) - 10(9) = 999 - 900 - 90 = 9$.
+
+      So the solution $K_1=9, K_2=9, K_3=9$ is unique.
+
+
+      Thus, the conditions derived are necessary and sufficient.
+
+      The number of solutions is the number of triples $(a,b,c)$ of digits summing to 8.
+
+      Each such triple determines $d,e,f$ uniquely as $9-a, 9-b, 9-c$.
+
+      Since $0 \le a \le 8$, $d = 9-a$ is between 1 and 9, which is a valid digit.
+
+      Same for $b,e$ and $c,f$.
+
+      So all 45 solutions are valid.
+
+
+      Let''s quickly re-verify the example.
+
+      Grid:
+
+      0 0 8
+
+      9 9 1
+
+      $a=0, b=0, c=8$. Sum $a+b+c = 8$. Correct.
+
+      $d=9, e=9, f=1$.
+
+      Row sums: $008 + 991 = 999$. Correct.
+
+      Col sums: $09 + 09 + 81 = 9 + 9 + 81 = 99$. Correct.
+
+
+      Another example:
+
+      $a=1, b=1, c=6$. Sum 8.
+
+      $d=8, e=8, f=3$.
+
+      Row 1: 116. Row 2: 883. Sum: $116+883=999$. Correct.
+
+      Col 1: 18. Col 2: 18. Col 3: 63. Sum: $18+18+63 = 36+63=99$. Correct.
+
+
+      The logic holds.
+
+      The number of ways is 45.'
+    proposals:
+    - title: Calculate the number of non-negative integer solutions to $a+b+c=8$.
+      prob: 0.9998060334748016
+      logprob: -0.00019398533913772553
+      node:
+        thought: 'The number of non-negative integer solutions to $a+b+c=8$ is given by stars and bars
+          formula $\binom{n+k-1}{k-1}$ with $n=8, k=3$.
+
+          $\binom{10}{2} = 45$.
+
+          Since each solution for $(a,b,c)$ uniquely determines $(d,e,f)$ via $d=9-a, e=9-b, f=9-c$, and
+          all resulting digits are valid (0-9), there are exactly 45 such grids.
+
+          <answer>45</answer>'
+        answer: true

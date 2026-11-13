@@ -1,0 +1,444 @@
+proposals:
+- title: 'Find the largest possible real part of \[(75+117i)z+\frac{96+144i}{z}\]where $z$ is a complex
+    number with $|z|=4$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9991723836233293
+  logprob: -0.0008279590401798487
+  node:
+    thought: Let $w = 75+117i$ and $v = 96+144i$. The expression is $E = wz + \frac{v}{z}$. We want to
+      maximize $\text{Re}(E)$ subject to $|z|=4$.
+    proposals:
+    - title: Simplify the coefficients $w$ and $v$.
+      prob: 0.9849846409098931
+      logprob: -0.015129230916500092
+      node:
+        thought: 'Let''s simplify $w = 75+117i$ and $v = 96+144i$.
+
+          $75 = 3 \times 25$, $117 = 3 \times 39$. So $w = 3(25+39i)$.
+
+          $96 = 3 \times 32$, $144 = 3 \times 48$. So $v = 3(32+48i)$.
+
+          Also notice that $25+39i$ and $32+48i$ might share factors.
+
+          $25+39i$: $25^2+39^2 = 625+1521=2146$.
+
+          $32+48i = 16(2+3i)$.
+
+          $25+39i$: Let''s check if it''s a multiple of $2+3i$. $(2+3i)(a+bi) = 2a-3b + i(3a+2b)$.
+
+          $2a-3b=25, 3a+2b=39$. Multiply first by 2, second by 3: $4a-6b=50, 9a+6b=117$. Add: $13a=167$,
+          not integer.
+
+          Let''s look at magnitudes. $|w|^2 = 75^2+117^2 = 5625+13689=19314$.
+
+          $|v|^2 = 96^2+144^2 = 9216+20736=29952$.
+
+          Let''s factor out common terms from start.
+
+          $w = 3 \cdot 25 + 3 \cdot 39 i = 3(25+39i)$.
+
+          $v = 3 \cdot 32 + 3 \cdot 48 i = 3(32+48i) = 96(1 + 1.5i)$? No. $96+144i = 48(2+3i)$.
+
+          $75+117i = 3(25+39i)$. Does $25+39i$ relate to $2+3i$?
+
+          $(2+3i)^2 = 4-9+12i = -5+12i$.
+
+          $(2+3i)^3 = (-5+12i)(2+3i) = -10-15i+24i-36 = -46+9i$.
+
+          Let''s just keep $w$ and $v$ as is or simplify later.
+
+          Key idea: Let $z = 4e^{i\theta}$. Then $\frac{1}{z} = \frac{1}{4}e^{-i\theta} = \frac{\bar{z}}{|z|^2}
+          = \frac{\bar{z}}{16}$.
+
+          So $E = wz + \frac{v}{16}\bar{z}$.
+
+          $\text{Re}(E) = \text{Re}(wz + \frac{v}{16}\bar{z})$.
+
+          Let $w = |w|e^{i\alpha}$ and $v/16 = \frac{|v|}{16}e^{i\beta}$.
+
+          Let $z = 4e^{i\theta}$.
+
+          $wz = |w|4 e^{i(\theta+\alpha)}$.
+
+          $\frac{v}{16}\bar{z} = \frac{|v|}{16} e^{i\beta} \cdot 4 e^{-i\theta} = \frac{|v|}{4} e^{i(\beta-\theta)}$.
+
+          $\text{Re}(E) = 4|w|\cos(\theta+\alpha) + \frac{|v|}{4}\cos(\beta-\theta)$.
+
+          This looks like maximizing $A\cos(\theta+\alpha) + B\cos(\theta''-\beta)$.
+
+          Actually, let $k = v/16$. Then term is $k\bar{z}$.
+
+          $\text{Re}(wz + k\bar{z})$.
+
+          Let $w = r_w e^{i\phi_w}$ and $k = r_k e^{i\phi_k}$.
+
+          $z = 4 e^{i\theta}$.
+
+          $wz = 4 r_w e^{i(\theta+\phi_w)}$.
+
+          $k\bar{z} = 4 r_k e^{-i(\theta-\phi_k)} = 4 r_k e^{i(\phi_k-\theta)}$.
+
+          Sum $= 4 r_w (\cos(\theta+\phi_w) + i\dots) + 4 r_k (\cos(\phi_k-\theta) + i\dots)$.
+
+          Real part $= 4 r_w \cos(\theta+\phi_w) + 4 r_k \cos(\phi_k-\theta)$.
+
+          We want to maximize this over $\theta$.
+
+          Let $u = \theta + \phi_w$. Then $\phi_k - \theta = \phi_k - (u - \phi_w) = (\phi_k+\phi_w) -
+          u$.
+
+          Let $\delta = \phi_k + \phi_w$.
+
+          Expression $= 4 r_w \cos u + 4 r_k \cos(\delta - u)$.
+
+          $= 4 [ r_w \cos u + r_k (\cos\delta \cos u + \sin\delta \sin u) ]$
+
+          $= 4 [ (r_w + r_k \cos\delta) \cos u + (r_k \sin\delta) \sin u ]$.
+
+          This is of form $4 [ A \cos u + B \sin u ]$.
+
+          Max value is $4 \sqrt{A^2 + B^2}$.
+
+          $A^2+B^2 = (r_w + r_k \cos\delta)^2 + (r_k \sin\delta)^2 = r_w^2 + 2 r_w r_k \cos\delta + r_k^2
+          (\cos^2\delta + \sin^2\delta) = r_w^2 + r_k^2 + 2 r_w r_k \cos\delta$.
+
+          So Max $\text{Re}(E) = 4 \sqrt{r_w^2 + r_k^2 + 2 r_w r_k \cos(\phi_k+\phi_w)}$.
+
+          Note that $r_w = |w|$, $r_k = |v/16| = |v|/16$.
+
+          And $\phi_w = \arg(w)$, $\phi_k = \arg(v/16) = \arg(v)$.
+
+          So $\phi_k+\phi_w = \arg(v) + \arg(w) = \arg(wv)$.
+
+          Thus $\cos(\phi_k+\phi_w) = \cos(\arg(wv)) = \frac{\text{Re}(wv)}{|wv|} = \frac{\text{Re}(wv)}{|w||v|}$.
+
+          Then $r_w^2 + r_k^2 + 2 r_w r_k \frac{\text{Re}(wv)}{|w||v|} = |w|^2 + \frac{|v|^2}{256} + 2
+          |w| \frac{|v|}{16} \frac{\text{Re}(wv)}{|w||v|} = |w|^2 + \frac{|v|^2}{256} + \frac{1}{8} \text{Re}(wv)$.
+
+          So Max $\text{Re}(E) = 4 \sqrt{|w|^2 + \frac{|v|^2}{256} + \frac{1}{8} \text{Re}(wv)}$.
+
+          Let''s calculate $|w|^2$, $|v|^2$, and $\text{Re}(wv)$.
+
+          $w = 75+117i$. $|w|^2 = 75^2 + 117^2 = 5625 + 13689 = 19314$.
+
+          $v = 96+144i$. $|v|^2 = 96^2 + 144^2 = 9216 + 20736 = 29952$.
+
+          $wv = (75+117i)(96+144i)$.
+
+          $\text{Re}(wv) = 75 \cdot 96 - 117 \cdot 144$.
+
+          $75 \cdot 96 = 75(100-4) = 7500 - 300 = 7200$.
+
+          $117 \cdot 144 = 117(100+40+4) = 11700 + 4680 + 468 = 16848$.
+
+          Alternatively: $117 \cdot 144 = 9 \cdot 13 \cdot 12 \cdot 12 = 108 \cdot 156$?
+
+          $117/9 = 13$, $144/9 = 16$. $9 \cdot 9 \cdot 13 \cdot 16 = 81 \cdot 208$.
+
+          $81 \cdot 200 = 16200$. $81 \cdot 8 = 648$. $16200+648 = 16848$. Correct.
+
+          $\text{Re}(wv) = 7200 - 16848 = -9648$.
+
+
+          Now plug into the formula:
+
+          Term inside sqrt: $19314 + \frac{29952}{256} + \frac{1}{8}(-9648)$.
+
+          $\frac{29952}{256}$: $256 \times 100 = 25600$. $29952-25600 = 4352$.
+
+          $256 \times 10 = 2560$. $4352-2560 = 1792$.
+
+          $256 \times 7 = 1792$. So $100+10+7=117$.
+
+          Check: $117 \times 256 = 117(250+6) = 29250 + 702 = 29952$. Correct.
+
+          So $\frac{|v|^2}{256} = 117$.
+
+
+          $\frac{1}{8}(-9648) = -1206$.
+
+          $9648 / 8$: $8000/8=1000$, $1600/8=200$, $48/8=6$. So $1206$.
+
+
+          Sum $= 19314 + 117 - 1206$.
+
+          $19314 + 117 = 19431$.
+
+          $19431 - 1206 = 18225$.
+
+
+          Max $\text{Re}(E) = 4 \sqrt{18225}$.
+
+          $\sqrt{18225}$: Ends in 5. $130^2 = 16900$. $140^2 = 19600$.
+
+          Try 135. $135^2 = (100+35)^2 = 10000 + 7000 + 1225 = 18225$.
+
+          So $\sqrt{18225} = 135$.
+
+          Max $\text{Re}(E) = 4 \times 135 = 540$.
+
+
+          Let''s double check the logic.
+
+          Expression: $E = wz + \frac{v}{z}$.
+
+          $|z|=4 \implies \frac{1}{z} = \frac{\bar{z}}{16}$.
+
+          $E = wz + \frac{v}{16}\bar{z}$.
+
+          Let $k = \frac{v}{16}$.
+
+          $\text{Re}(E) = \text{Re}(wz + k\bar{z})$.
+
+          Let $w = r_w e^{i\phi_w}$, $k = r_k e^{i\phi_k}$, $z = 4e^{i\theta}$.
+
+          $wz = 4 r_w e^{i(\theta+\phi_w)}$.
+
+          $k\bar{z} = 4 r_k e^{-i(\theta-\phi_k)} = 4 r_k e^{i(\phi_k-\theta)}$.
+
+          $\text{Re}(E) = 4 r_w \cos(\theta+\phi_w) + 4 r_k \cos(\phi_k-\theta)$.
+
+          Let $\alpha = \phi_w$, $\beta = \phi_k$.
+
+          $f(\theta) = 4 r_w \cos(\theta+\alpha) + 4 r_k \cos(\beta-\theta)$.
+
+          Derivative $f''(\theta) = -4 r_w \sin(\theta+\alpha) + 4 r_k \sin(\beta-\theta)$.
+
+          Set to 0: $r_w \sin(\theta+\alpha) = r_k \sin(\beta-\theta)$.
+
+          This corresponds to the vector addition method.
+
+          Consider complex numbers $A = 4r_w e^{i(\theta+\alpha)}$ and $B = 4r_k e^{i(\beta-\theta)}$.
+
+          We want to maximize $\text{Re}(A+B)$.
+
+          Note that $A \cdot B = 16 r_w r_k e^{i(\alpha+\beta)}$. This product is constant in modulus
+          and phase?
+
+          Wait, the sum of two vectors of fixed lengths $L_1=4r_w$ and $L_2=4r_k$.
+
+          The angle between them is $(\theta+\alpha) - (\beta-\theta) = 2\theta + \alpha - \beta$.
+
+          As $\theta$ varies, the angle varies over all possible values $[0, 2\pi)$.
+
+          The maximum real part of the sum of two vectors of lengths $L_1, L_2$ depends on their relative
+          angle.
+
+          Actually, we can rotate the whole system.
+
+          Let $S = A+B$. We want max $\text{Re}(S)$.
+
+          $S(\theta) = 4 r_w e^{i(\theta+\alpha)} + 4 r_k e^{i(\beta-\theta)}$.
+
+          Let $\gamma = \theta+\alpha$. Then $\beta-\theta = \beta-(\gamma-\alpha) = (\alpha+\beta)-\gamma$.
+
+          Let $\delta = \alpha+\beta$.
+
+          $S(\gamma) = 4 r_w e^{i\gamma} + 4 r_k e^{i(\delta-\gamma)}$.
+
+          $S(\gamma) = 4 r_w (\cos\gamma + i\sin\gamma) + 4 r_k (\cos(\delta-\gamma) + i\sin(\delta-\gamma))$.
+
+          $\text{Re}(S) = 4 [ r_w \cos\gamma + r_k \cos(\delta-\gamma) ]$.
+
+          $= 4 [ r_w \cos\gamma + r_k (\cos\delta\cos\gamma + \sin\delta\sin\gamma) ]$
+
+          $= 4 [ (r_w + r_k\cos\delta)\cos\gamma + (r_k\sin\delta)\sin\gamma ]$.
+
+          Max value is $4 \sqrt{ (r_w+r_k\cos\delta)^2 + (r_k\sin\delta)^2 } = 4 \sqrt{ r_w^2 + r_k^2
+          + 2r_w r_k \cos\delta }$.
+
+          Here $\delta = \phi_w + \phi_k = \arg(w) + \arg(k) = \arg(wk)$.
+
+          $k = v/16$. $\arg(k) = \arg(v)$.
+
+          So $\delta = \arg(wv)$.
+
+          $\cos\delta = \frac{\text{Re}(wv)}{|wv|} = \frac{\text{Re}(wv)}{|w||v|}$.
+
+          $r_w = |w|$, $r_k = |v|/16$.
+
+          $r_w^2 + r_k^2 + 2 r_w r_k \cos\delta = |w|^2 + \frac{|v|^2}{256} + 2 |w| \frac{|v|}{16} \frac{\text{Re}(wv)}{|w||v|}
+          = |w|^2 + \frac{|v|^2}{256} + \frac{1}{8}\text{Re}(wv)$.
+
+          This confirms the previous derivation.
+
+
+          Calculations check:
+
+          $|w|^2 = 19314$.
+
+          $|v|^2 = 29952$.
+
+          $\text{Re}(wv) = -9648$.
+
+          $\frac{|v|^2}{256} = 117$.
+
+          $\frac{1}{8}\text{Re}(wv) = -1206$.
+
+          Sum $= 19314 + 117 - 1206 = 18225$.
+
+          $\sqrt{18225} = 135$.
+
+          Result $= 4 \times 135 = 540$.
+
+
+          Is it possible that the maximum is negative? No, we can choose $\theta$ to align the vectors
+          such that the real part is positive. The square root is always non-negative, and we take the
+          positive root for the maximum magnitude of the projection.
+
+
+          Let''s quickly re-verify $\text{Re}(wv)$.
+
+          $w = 75+117i$.
+
+          $v = 96+144i$.
+
+          $wv = (75)(96) + (75)(144)i + (117i)(96) + (117i)(144)i$.
+
+          Real part: $75 \cdot 96 - 117 \cdot 144$.
+
+          $75 \cdot 96 = 7200$.
+
+          $117 \cdot 144 = 16848$.
+
+          $7200 - 16848 = -9648$. Correct.
+
+
+          $\frac{29952}{256}$:
+
+          $29952 / 2 = 14976$.
+
+          $14976 / 2 = 7488$.
+
+          $7488 / 2 = 3744$.
+
+          $3744 / 2 = 1872$.
+
+          $1872 / 2 = 936$.
+
+          $936 / 2 = 468$.
+
+          $468 / 2 = 234$.
+
+          $234 / 2 = 117$.
+
+          Divided by 2 eight times means divided by 256. So 117 is correct.
+
+
+          $19314 + 117 = 19431$.
+
+          $19431 - 1206 = 18225$.
+
+          $\sqrt{18225}$:
+
+          $130^2 = 16900$.
+
+          $135^2 = (130+5)^2 = 16900 + 1300 + 25 = 18225$. Correct.
+
+
+          $4 \times 135 = 540$.
+
+
+          The answer is 540.'
+        proposals:
+        - title: Calculate values
+          prob: 0.6511935865555298
+          logprob: -0.428948312997818
+        - title: Verify calculation
+          prob: 0.34855881976997977
+          logprob: -1.0539482831954956
+          node:
+            thought: 'Re-verification of steps.
+
+              Formula: Max Re = $4 \sqrt{|w|^2 + \frac{|v|^2}{16^2} + \frac{1}{8}\text{Re}(wv)}$.
+
+              Wait, the term was $2 r_w r_k \cos\delta$.
+
+              $r_k = |v|/16$.
+
+              $2 |w| \frac{|v|}{16} \frac{\text{Re}(wv)}{|w||v|} = \frac{2}{16} \text{Re}(wv) = \frac{1}{8}
+              \text{Re}(wv)$.
+
+              Yes, correct.
+
+
+              Let''s check if there are any constraints on $\theta$. $\theta$ is any real number, so we
+              can achieve the phase alignment required for the maximum.
+
+
+              Is there any ambiguity about "largest possible real part"?
+
+              The expression is $E(z)$. We found the maximum value of $\text{Re}(E(z))$.
+
+              The value is 540.
+
+
+              Let''s do a sanity check with a simpler case.
+
+              Let $w=1, v=1, |z|=1$.
+
+              $E = z + 1/z = z + \bar{z} = 2\text{Re}(z)$. Max is 2.
+
+              Formula: $|w|=1, |v|=1, \text{Re}(wv)=1$.
+
+              Max $= 1 \cdot \sqrt{1^2 + \frac{1^2}{1^2} + \frac{1}{1}\cdot 1} = \sqrt{3}$?
+
+              Wait. For $|z|=1$, $1/z = \bar{z}$.
+
+              My formula derived for $|z|=4$.
+
+              Let''s re-derive for $|z|=R$.
+
+              $E = wz + \frac{v}{z} = wz + \frac{v}{R^2}\bar{z}$.
+
+              $k = v/R^2$.
+
+              Max $\text{Re} = R \sqrt{|w|^2 + |k|^2 + 2|w||k|\cos(\arg(wk))}$.
+
+              $|k| = |v|/R^2$.
+
+              $|k|^2 = |v|^2/R^4$.
+
+              $2|w||k| = 2|w||v|/R^2$.
+
+              $\cos(\arg(wk)) = \frac{\text{Re}(wv)}{|w||v|}$.
+
+              Term $= 2|w|\frac{|v|}{R^2} \frac{\text{Re}(wv)}{|w||v|} = \frac{2}{R^2}\text{Re}(wv)$.
+
+              Inside sqrt: $|w|^2 + \frac{|v|^2}{R^4} + \frac{2}{R^2}\text{Re}(wv)$.
+
+              Prefactor $R$.
+
+              Max $= R \sqrt{|w|^2 + \frac{|v|^2}{R^4} + \frac{2}{R^2}\text{Re}(wv)}$.
+
+              For $R=1, w=1, v=1$:
+
+              Max $= 1 \sqrt{1 + 1 + 2} = \sqrt{4} = 2$. Correct.
+
+
+              For $R=4, w=75+117i, v=96+144i$:
+
+              Max $= 4 \sqrt{|w|^2 + \frac{|v|^2}{256} + \frac{2}{16}\text{Re}(wv)} = 4 \sqrt{|w|^2 +
+              \frac{|v|^2}{256} + \frac{1}{8}\text{Re}(wv)}$.
+
+              This matches my formula.
+
+
+              The calculation holds.'
+            proposals:
+            - title: Final Answer
+              prob: 0.999864189038775
+              logprob: -0.00013582018436864018
+              node:
+                thought: 'The largest possible real part is 540.
+
+                  <answer>540</answer>'
+                answer: true
+    - title: Use polar form or geometric interpretation of complex numbers.
+      prob: 0.004025407667637157
+      logprob: -5.515129089355469
+    - title: Use the property $\text{Re}(A) = \frac{A + \bar{A}}{2}$.
+      prob: 0.010942192515077793
+      logprob: -4.515129089355469

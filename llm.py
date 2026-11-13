@@ -1,35 +1,46 @@
 """LLM-in-the-loop for the thought tree: XML codec + search.
 
 The LLM writes a depth-first chain of nodes. Each node first lists candidate
-proposals; the *next* node then says, with <parent>, which of those proposals
+proposals; the *next* node then says, with <follow_proposal>, which of those proposals
 it develops. Proposals not picked stay unexplored in the tree.
 
     <node>
+      <follow_proposal idx=""/>
+      <thought></thought>
+      <proposal idx="0">What is 14 * 25?</proposal>
+    </node>
+    <node>
+      <follow_proposal idx="0"/>
       <thought>14 * 25 is easier to compute in parts.</thought>
       <proposal idx="0">Distribute over 25: 10*25 + 4*25</proposal>
       <proposal idx="1">Use 4*25 = 100: 14*25 = 3.5*100</proposal>
     </node>
     <node>
-      <parent>0</parent>
-      <thought>10*25 = 250 and 4*25 = 100.</thought>
-      <proposal idx="0">Add the parts: 250 + 100</proposal>
+      <follow_proposal idx="1"/>
+      <thought>4*25 = 100 and 14 = 3.5*4, so 14*25 = 3.5*100.</thought>
+      <proposal idx="0">Multiply: 3.5*100</proposal>
       <proposal idx="1">Check another way: 7*50</proposal>
     </node>
     <node>
-      <parent>0</parent>
-      <thought>250 + 100 = 350, so 14 * 25 = 350.</thought>
+      <follow_proposal idx="0"/>
+      <thought>3.5*100 = 350, so 14 * 25 = 350.</thought>
+      <answer>350</answer>
     </node>
 
-- The first node of a reply develops the proposal the code asked for (no <parent>).
-- <parent>k</parent> refers to the proposal with idx k of the previous node
-  (idx defaults to the proposal's 0-based position).
+- Every trace starts with a question node written by the code, mirroring the
+  tree's root: <follow_proposal idx=""/>, an empty thought, and the question as its only
+  proposal.
+- Every node after it starts with <follow_proposal idx="k"/>: the proposal with idx k of
+  the previous node (idx defaults to the proposal's 0-based position). The code
+  writes the <follow_proposal> of the first node of each reply (the proposal it chose to
+  develop); the model writes the rest.
 - A node with no proposals is the answer: its thought is the final answer and
   nothing follows it.
 - A reply may stop on a node with open proposals; search resumes there later.
 - A truncated reply keeps every complete <node> and drops the unfinished one.
 
 The LLM does not write scores. A proposal's `prob` is meant to come from the
-log-prob of the LLM writing that <parent>, and its `value` from a trained
+log-prob of the LLM writing that <follow_proposal>, and its `value` from a trained
 critic; both are left unset here. `search` takes a `score` function so either
 can be plugged in later.
 
@@ -38,7 +49,7 @@ Two ways to call a model, both using the same format:
   and writes new nodes (`expand`).
 - completion: `complete(prefix) -> str` continues a text document. The prefix
   is the trace so far, cut after the node that owns the proposal to explore,
-  plus an open `<node><parent>k</parent>` choosing that proposal; the model
+  plus an open `<node><follow_proposal idx="k"/>` choosing that proposal; the model
   writes the rest (`expand_completion`). Suits base / autocomplete models.
 """
 
@@ -58,37 +69,62 @@ PrefillLLM = Callable[[str, str, str], "str | Reply"]  # (system, user, assistan
 Score = Callable[[Node, Proposal], float]
 
 EXAMPLE_QUESTION = "What is 14 * 25?"
+
+
+def question_node(question: str) -> str:
+    """The node every trace starts with, mirroring the tree's root: an empty
+    <follow_proposal>, an empty thought, and the question as its only proposal. Written by
+    the code, not the model."""
+    return (
+        "<node>\n"
+        '  <follow_proposal idx=""/>\n'
+        "  <thought></thought>\n"
+        f'  <proposal idx="0">{_xml_text(question)}</proposal>\n'
+        "</node>"
+    )
+
+
 EXAMPLE_TRACE = """\
 <node>
+  <follow_proposal idx=""/>
+  <thought></thought>
+  <proposal idx="0">What is 14 * 25?</proposal>
+</node>
+<node>
+  <follow_proposal idx="0"/>
   <thought>14 * 25 is easier to compute in parts.</thought>
   <proposal idx="0">Distribute over 25: 10*25 + 4*25</proposal>
   <proposal idx="1">Use 4*25 = 100: 14*25 = 3.5*100</proposal>
 </node>
 <node>
-  <parent>0</parent>
-  <thought>10*25 = 250 and 4*25 = 100.</thought>
-  <proposal idx="0">Add the parts: 250 + 100</proposal>
+  <follow_proposal idx="1"/>
+  <thought>4*25 = 100 and 14 = 3.5*4, so 14*25 = 3.5*100.</thought>
+  <proposal idx="0">Multiply: 3.5*100</proposal>
   <proposal idx="1">Check another way: 7*50</proposal>
 </node>
 <node>
-  <parent>0</parent>
-  <thought>250 + 100 = 350, so 14 * 25 = 350.</thought>
+  <follow_proposal idx="0"/>
+  <thought>3.5*100 = 350, so 14 * 25 = 350.</thought>
+  <answer>350</answer>
 </node>"""
 
 SYSTEM_PROMPT = f"""\
 You solve problems by writing a chain of reasoning steps as XML nodes.
 
 Each node has:
-- <thought>: your reasoning for this step.
-- <proposal idx="i">title</proposal>: two to four possible next steps, each a
-  short title. idx counts from 0.
-When a thought states the final answer, write that node with no proposals.
+- <thought>: one short reasoning step, at most a few sentences. Do one thing
+  per node (one computation, one case, one idea) and move the rest of the work
+  into the next nodes.
+- <proposal idx="i">title</proposal>: at least two (two to four) different
+  possible next steps, each a short title. idx counts from 0.
+When a thought reaches the final answer, write that node with no proposals and
+add the answer after its thought as <answer>...</answer>.
 
-After a node with proposals, write the next node starting with
-<parent>i</parent>: the idx of the proposal it develops, chosen among the
-proposals of the node directly above it (not a node number). A node with one
-proposal is followed by <parent>0</parent>. Keep going depth-first until a node
-gives the final answer. Write only <node> elements.
+The trace starts with a question node: <follow_proposal idx=""/>, an empty thought, and
+the question as its only proposal. Every node after it starts with
+<follow_proposal idx="i"/>: the idx of the proposal it develops, chosen among the
+proposals of the node directly above it (not a node number). Keep going
+depth-first until a node gives the final answer. Write only <node> elements.
 
 Example for "{EXAMPLE_QUESTION}":
 {EXAMPLE_TRACE}
@@ -97,9 +133,10 @@ Example for "{EXAMPLE_QUESTION}":
 # Header of the completion-mode document: a short description and one solved
 # example, so a base model sees the pattern before the real question.
 COMPLETION_HEADER = f"""\
-Each problem below is solved with a depth-first trace of XML nodes. A node has
-a <thought> and two to four <proposal idx="i"> possible next steps. The next
-node starts with <parent>i</parent> to say which proposal it develops. A node
+Each problem below is solved with a depth-first trace of XML nodes. The first
+node has the question as its only proposal. A node has a <thought> and
+<proposal idx="i"> possible next steps. Every node after the first starts with
+<follow_proposal idx="i"/> to say which proposal of the node above it develops. A node
 with no proposals gives the final answer and ends the trace.
 
 <question>{EXAMPLE_QUESTION}</question>
@@ -125,7 +162,8 @@ class ProposalSpec:
 class NodeSpec:
     thought: str
     proposals: list[ProposalSpec] = field(default_factory=list)
-    parent: Optional[int] = None  # idx of the previous node's proposal this node develops
+    follow: Optional[int] = None  # <follow_proposal idx>: the previous node's proposal this node develops
+    answer: Optional[str] = None  # text of the node's <answer> element (outside <thought>)
 
     @property
     def is_answer(self) -> bool:
@@ -142,7 +180,16 @@ class NodeSpec:
 
 # --- decode ----------------------------------------------------------------
 _NODE = re.compile(r"<node\b[^>]*>(.*?)</node\s*>", re.S | re.I)
-_PARENT = re.compile(r"<parent\b[^>]*>\s*(-?\d+)\s*</parent\s*>", re.S | re.I)
+_ANSWER_EL = re.compile(r"<answer\b[^>]*>(.*?)</answer\s*>", re.S | re.I)
+_FOLLOW = re.compile(r"<follow_proposal\b[^>]*?\bidx\s*=\s*[\"']\s*(-?\d+)\s*[\"']", re.I)
+FOLLOW_TAG = re.compile(r"<follow_proposal\b", re.I)
+
+
+def _follow_of(text: str) -> Optional[int]:
+    """The idx in <follow_proposal idx="k"/>; None if absent or empty (the
+    question node has <follow_proposal idx=""/>)."""
+    m = _FOLLOW.search(text)
+    return int(m.group(1)) if m else None
 _THOUGHT = re.compile(r"<thought\b[^>]*>(.*?)</thought\s*>", re.S | re.I)
 _PROPOSAL = re.compile(r"<proposal\b([^>]*)>(.*?)</proposal\s*>", re.S | re.I)
 _IDX = re.compile(r"\bidx\s*=\s*[\"']\s*([^\"']*?)\s*[\"']", re.I)
@@ -166,8 +213,10 @@ def decode_chain(text: str) -> list[NodeSpec]:
             if idx and not re.fullmatch(r"-?\d+", idx.group(1)):
                 raise DecodeError(f"idx={idx.group(1)!r} is not an integer")
             proposals.append(ProposalSpec(_text(title), int(idx.group(1)) if idx else None))
-        parent = _PARENT.search(body)
-        chain.append(NodeSpec(_text(m.group(1)), proposals, int(parent.group(1)) if parent else None))
+        follow = _follow_of(body)
+        outside = body[: m.start()] + body[m.end():]
+        ans = _ANSWER_EL.search(outside)
+        chain.append(NodeSpec(_text(m.group(1)), proposals, follow, _text(ans.group(1)) if ans else None))
     return chain
 
 
@@ -191,10 +240,10 @@ def validate_chain(chain: list[NodeSpec]) -> None:
         prev = chain[i - 1]
         if prev.is_answer:
             raise DecodeError(f"node {i} follows node {i - 1}, which has no proposals (it is the answer)")
-        if n.parent is None:
-            raise DecodeError(f"node {i} has no <parent>")
-        if prev.position_of(n.parent) is None:
-            raise DecodeError(f"node {i}: <parent>{n.parent}</parent> is not a proposal of node {i - 1}")
+        if n.follow is None:
+            raise DecodeError(f"node {i} has no <follow_proposal>")
+        if prev.position_of(n.follow) is None:
+            raise DecodeError(f'node {i}: <follow_proposal idx="{n.follow}"/> is not a proposal of node {i - 1}')
 
 
 class PartialChain(DecodeError):
@@ -217,18 +266,28 @@ def valid_prefix(chain: list[NodeSpec]) -> tuple[list[NodeSpec], Optional[str]]:
     """Repair what is unambiguous, then keep the longest valid start of the chain.
 
     Repair: after a node with exactly one proposal there is nothing to choose,
-    so the next node's <parent> is set to that proposal whatever it said.
+    so the next node's <follow_proposal> is set to that proposal whatever it said.
     Returns (valid nodes, error of the first invalid node or None)."""
-    chain = [NodeSpec(n.thought, list(n.proposals), n.parent) for n in chain]
+    chain = [NodeSpec(n.thought, list(n.proposals), n.follow, n.answer) for n in chain]
     for i in range(1, len(chain)):
         prev = chain[i - 1]
         if len(prev.proposals) == 1:
-            chain[i].parent = prev.idx_of(0)
+            chain[i].follow = prev.idx_of(0)
     for i in range(len(chain)):
         err = _node_error(chain, i)
         if err:
             return chain[:i], err
     return chain, None if chain else "no complete <node> in the output"
+
+
+_OWN_TAG = re.compile(r"<(?=/?(?:node|thought|proposal|follow_proposal|question|trace|step|develop)\b)", re.I)
+
+
+def _xml_text(s: str) -> str:
+    """Text placed inside our XML: kept as the model writes it (math like
+    `a < b` and <answer> tags stay readable), except that our own structural
+    tags are escaped so they can't break the structure. decode_chain unescapes."""
+    return _OWN_TAG.sub("&lt;", s)
 
 
 # --- encode ----------------------------------------------------------------
@@ -237,11 +296,13 @@ def encode_chain(chain: list[NodeSpec]) -> str:
     out = []
     for n in chain:
         lines = ["<node>"]
-        if n.parent is not None:
-            lines.append(f"  <parent>{n.parent}</parent>")
-        lines.append(f"  <thought>{html.escape(n.thought, quote=False)}</thought>")
+        if n.follow is not None:
+            lines.append(f'  <follow_proposal idx="{n.follow}"/>')
+        lines.append(f"  <thought>{_xml_text(n.thought)}</thought>")
         for k, p in enumerate(n.proposals):
-            lines.append(f'  <proposal idx="{n.idx_of(k)}">{html.escape(p.title, quote=False)}</proposal>')
+            lines.append(f'  <proposal idx="{n.idx_of(k)}">{_xml_text(p.title)}</proposal>')
+        if n.answer is not None:
+            lines.append(f"  <answer>{_xml_text(n.answer)}</answer>")
         lines.append("</node>")
         out.append("\n".join(lines))
     return "\n".join(out)
@@ -250,32 +311,33 @@ def encode_chain(chain: list[NodeSpec]) -> str:
 def encode_context(node: Node, proposal: Proposal | str) -> str:
     """Prompt for one call: the question, the path so far, and the proposal to develop."""
     p = node._resolve(proposal)
-    lines = [f"<question>{html.escape(node.question, quote=False)}</question>"]
+    lines = [f"<question>{_xml_text(node.question)}</question>"]
     steps = [n for n in node.path() if not n.is_root]
     if steps:
         lines.append("<path>")
         for n in steps:
             title = html.escape(n.title or "", quote=True)
-            lines.append(f'  <step title="{title}">{html.escape(n.thought or "", quote=False)}</step>')
+            lines.append(f'  <step title="{title}">{_xml_text(n.thought or "")}</step>')
         lines.append("</path>")
     if node.is_root:
-        lines.append("Start reasoning about the question. Your first node has no <parent>.")
+        lines.append("Start reasoning about the question. Your first node has no <follow_proposal>.")
     else:
-        lines.append(f"<develop>{html.escape(p.title, quote=False)}</develop>")
+        lines.append(f"<develop>{_xml_text(p.title)}</develop>")
         lines.append("Continue from the path by developing the step in <develop>. "
-                     "Your first node develops it and has no <parent>.")
+                     "Your first node develops it and has no <follow_proposal>.")
     return "\n".join(lines)
 
 
 def encode_trace(node: Node) -> str:
     """The path from the first node down to `node` as XML nodes. Each node lists
-    all its proposals (idx = position), and <parent> links each to the previous."""
+    all its proposals (idx = position), and <follow_proposal> links each to the previous;
+    the first node has <follow_proposal idx="0"/> (the question node's only proposal)."""
     steps = [n for n in node.path() if not n.is_root]
     chain = [
         NodeSpec(
             thought=n.thought or "",
             proposals=[ProposalSpec(p.title) for p in n.proposals],
-            parent=None if i == 0 else n.parent.proposals.index(n.incoming),
+            follow=0 if i == 0 else n.parent.proposals.index(n.incoming),
         )
         for i, n in enumerate(steps)
     ]
@@ -283,17 +345,15 @@ def encode_trace(node: Node) -> str:
 
 
 def _open_trace(node: Node, proposal: Proposal | str) -> tuple[str, str]:
-    """(question + trace cut after `node` + open node, opener). The opener's
-    <parent> picks `proposal` (no <parent> when developing the question)."""
+    """(question + trace cut after `node` + open node, opener). The trace starts
+    with the question node; the opener's <follow_proposal> picks `proposal` (0 when
+    developing the question)."""
     p = node._resolve(proposal)
-    if node.is_root:
-        opener = "<node>\n"
-    else:
-        opener = f"<node>\n  <parent>{node.proposals.index(p)}</parent>\n"
-    trace = encode_trace(node)
+    opener = f'<node>\n  <follow_proposal idx="{node.proposals.index(p)}"/>\n'
+    trace = question_node(node.question) + "\n" + (encode_trace(node) + "\n" if not node.is_root else "")
     body = (
-        f"<question>{html.escape(node.question, quote=False)}</question>\n<trace>\n"
-        + (trace + "\n" if trace else "")
+        f"<question>{_xml_text(node.question)}</question>\n<trace>\n"
+        + trace
         + opener
     )
     return body, opener
@@ -308,7 +368,7 @@ def completion_prefix(node: Node, proposal: Proposal | str) -> tuple[str, str]:
 
 
 CONTINUE_INSTRUCTION = """\
-The trace below is in progress. It stops inside an open <node> whose <parent>
+The trace below is in progress. It stops inside an open <node> whose <follow_proposal>
 is already chosen. Continue it: write that node's <thought> and proposals,
 close it, and keep going depth-first until a node gives the final answer.
 Reply with only the continuation, starting with that node's <thought>."""
@@ -325,34 +385,29 @@ def continue_prompt(node: Node, proposal: Proposal | str) -> tuple[str, str]:
 def prefill_parts(node: Node, proposal: Proposal | str) -> tuple[str, str, str]:
     """For chat models that can continue a pre-started reply: (user message,
     assistant prefill, opener). The prefill is the trace cut after `node`, ending
-    in an open node whose <parent> picks `proposal`."""
+    in an open node whose <follow_proposal> picks `proposal`."""
     p = node._resolve(proposal)
-    if node.is_root:
-        opener = "<node>\n"
-    else:
-        opener = f"<node>\n  <parent>{node.proposals.index(p)}</parent>\n"
-    trace = encode_trace(node)
+    opener = f'<node>\n  <follow_proposal idx="{node.proposals.index(p)}"/>\n'
+    trace = question_node(node.question) + "\n" + (encode_trace(node) + "\n" if not node.is_root else "")
     user = (
-        f"<question>{html.escape(node.question, quote=False)}</question>\n"
+        f"<question>{_xml_text(node.question)}</question>\n"
         "Write the trace inside <trace> ... </trace>."
     )
-    prefill = "<trace>\n" + (trace + "\n" if trace else "") + opener
+    prefill = "<trace>\n" + trace + opener
     return user, prefill, opener
 
 
 def decode_continuation(reply: str, opener: str) -> list[NodeSpec]:
     """Decode a continuation of `opener`. Accepts a reply that continues inside
-    the open node, or one that rewrites the open node from <node> (its <parent>,
+    the open node, or one that rewrites the open node from <node> (its <follow_proposal>,
     if any, must match the opener's)."""
     reply = reply.split("</trace>")[0]
     if not reply.lstrip().lower().startswith("<node"):
         return decode_chain(opener + reply)
     chain = decode_chain(reply)
-    wanted = _PARENT.search(opener)
-    if chain and wanted and chain[0].parent is not None and chain[0].parent != int(wanted.group(1)):
-        raise DecodeError(
-            f"reply develops proposal {chain[0].parent}, expected {wanted.group(1)}"
-        )
+    wanted = _follow_of(opener)
+    if chain and wanted is not None and chain[0].follow is not None and chain[0].follow != wanted:
+        raise DecodeError(f"reply develops proposal {chain[0].follow}, expected {wanted}")
     return chain
 
 
@@ -360,7 +415,8 @@ def decode_continuation(reply: str, opener: str) -> list[NodeSpec]:
 def apply_chain(node: Node, proposal: Proposal | str, chain: list[NodeSpec]) -> list[Node]:
     """Develop `proposal` of `node` with the chain. Validates everything first,
     so a bad chain leaves the tree unchanged. A node without proposals is marked
-    as the answer. Returns the new nodes in order."""
+    as the answer; its <answer> element, if any, is stored at the end of its
+    thought. Returns the new nodes in order."""
     p = node._resolve(proposal)
     if p.is_explored:
         raise ValueError(f"Proposal {p.title!r} is already developed.")
@@ -368,12 +424,15 @@ def apply_chain(node: Node, proposal: Proposal | str, chain: list[NodeSpec]) -> 
     created: list[Node] = []
     cur_node, cur_prop = node, p
     for i, spec in enumerate(chain):
-        child = cur_node.develop(cur_prop, spec.thought, answer=spec.is_answer)
+        thought = spec.thought
+        if spec.answer is not None:  # the tree has no answer field: keep it with the thought
+            thought = f"{thought}\n<answer>{spec.answer}</answer>"
+        child = cur_node.develop(cur_prop, thought, answer=spec.is_answer)
         created.append(child)
         if spec.proposals:
             new = [child.propose(s.title) for s in spec.proposals]
             if i + 1 < len(chain):
-                cur_prop = new[spec.position_of(chain[i + 1].parent)]
+                cur_prop = new[spec.position_of(chain[i + 1].follow)]
         cur_node = child
     return created
 
@@ -384,12 +443,12 @@ ChoiceLogprobs = dict[int, float]  # proposal idx -> log-prob of the model writi
 
 @dataclass
 class Reply:
-    """A model reply with the log-probs of its <parent> choices.
+    """A model reply with the log-probs of its <follow_proposal> choices.
 
     Models may return a plain string instead; then no log-probs are recorded.
-    `choice_logprobs` has one entry per <parent> tag in `text`, in order: the
+    `choice_logprobs` has one entry per <follow_proposal> tag in `text`, in order: the
     distribution over idx digits at the position right after that tag (None
-    where unknown). `prefill_choice` is the same for the <parent> that a
+    where unknown). `prefill_choice` is the same for the <follow_proposal> that a
     pre-started reply or prefix ends with (the choice the code made)."""
 
     text: str
@@ -402,15 +461,15 @@ def _text_of(reply: str | Reply) -> str:
 
 
 def _chain_choices(chain: list[NodeSpec], reply: str | Reply, opener: Optional[str]) -> Optional[list[Optional[ChoiceLogprobs]]]:
-    """Distribution behind each chain node's <parent> (None for nodes without one)."""
+    """Distribution behind each chain node's <follow_proposal> (None for nodes without one)."""
     if isinstance(reply, str):
         return None
     rewrote = reply.text.split("</trace>")[0].lstrip().lower().startswith("<node")
     in_order = list(reply.choice_logprobs)
-    if opener is not None and not rewrote and "<parent>" in opener:
+    if opener is not None and not rewrote and _follow_of(opener) is not None:
         in_order.insert(0, reply.prefill_choice)
     it = iter(in_order)
-    return [next(it, None) if spec.parent is not None else None for spec in chain]
+    return [next(it, None) if spec.follow is not None else None for spec in chain]
 
 
 def attach_choice_logprobs(
@@ -435,7 +494,7 @@ def _apply_reply(
     node: Node, proposal: Proposal | str, reply: str | Reply, opener: Optional[str] = None
 ) -> list[Node]:
     """Decode a reply (a continuation of `opener` when given), apply its valid
-    start and store any <parent> log-probs. Raises DecodeError if nothing is
+    start and store any <follow_proposal> log-probs. Raises DecodeError if nothing is
     valid (tree unchanged), or PartialChain after applying a valid start."""
     text = _text_of(reply)
     chain = decode_continuation(text, opener) if opener is not None else decode_chain(text)
@@ -458,7 +517,7 @@ def expand(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node]:
 
 def expand_completion(node: Node, proposal: Proposal | str, complete: Complete) -> list[Node]:
     """One completion call: the model continues the trace from an open node whose
-    <parent> picks `proposal`. Anything after </trace> is ignored."""
+    <follow_proposal> picks `proposal`. Anything after </trace> is ignored."""
     prefix, opener = completion_prefix(node, proposal)
     return _apply_reply(node, proposal, complete(prefix), opener)
 
@@ -473,7 +532,7 @@ def expand_continue(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node
 def expand_prefill(node: Node, proposal: Proposal | str, llm: PrefillLLM) -> list[Node]:
     """One chat call with assistant prefill: the reply is pre-started with the cut
     trace and the model continues it (see prefill_parts). If the model returns a
-    Reply with log-probs, every <parent> choice in the call gets them."""
+    Reply with log-probs, every <follow_proposal> choice in the call gets them."""
     user, prefill, opener = prefill_parts(node, proposal)
     return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, user, prefill), opener)
 

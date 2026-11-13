@@ -1,0 +1,670 @@
+proposals:
+- title: 'Let ABCDEF be a convex equilateral hexagon in which all pairs of opposite sides are parallel.
+    The triangle whose sides are extensions of segments AB, CD, and EF has side lengths 200, 240, and
+    300. Find the side length of the hexagon.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9999402563428922
+  logprob: -5.974544183118269e-05
+  node:
+    thought: 'An equilateral hexagon with opposite sides parallel is a specific type of hexagon. Let the
+      side length be $s$. The angles are not necessarily all equal (120 degrees), but the opposite sides
+      being parallel imposes constraints on the angles. Specifically, if we extend the sides AB, CD, and
+      EF, they form a triangle. Let''s analyze the geometry of this configuration.
+
+      Let the vertices be $A, B, C, D, E, F$ in counterclockwise order.
+
+      Let the side length be $s$. So $AB=BC=CD=DE=EF=FA=s$.
+
+      Since opposite sides are parallel, $AB \parallel DE$, $BC \parallel EF$, and $CD \parallel FA$.
+
+      This implies that the hexagon can be viewed as a large equilateral triangle with three smaller equilateral
+      triangles cut off from the corners. Wait, is the large triangle equilateral?
+
+      The problem states the triangle formed by extensions of AB, CD, and EF has side lengths 200, 240,
+      and 300. This triangle is NOT necessarily equilateral.
+
+      Let the triangle formed by lines AB, CD, EF be $T$. Let its vertices be $P, Q, R$.
+
+      Line AB and Line CD intersect at a vertex of $T$. Line CD and Line EF intersect at another. Line
+      EF and Line AB intersect at the third.
+
+      Let''s define the angles. Since $AB \parallel DE$, $BC \parallel EF$, $CD \parallel FA$, the hexagon
+      is centrally symmetric? No, equilateral hexagons with parallel opposite sides are not necessarily
+      centrally symmetric unless they are also equiangular. However, the condition "equilateral and opposite
+      sides parallel" implies that the hexagon is formed by truncating the corners of a triangle.
+
+      Let the large triangle be $XYZ$. The sides of the hexagon lie on the sides of this triangle? No.
+
+      Let''s consider the extensions.
+
+      Extend AB and DC to meet at $P$.
+
+      Extend CD and FE to meet at $Q$.
+
+      Extend EF and BA to meet at $R$.
+
+      The triangle is $PQR$. The sides are $PQ, QR, RP$.
+
+      The segments $AB, CD, EF$ are parts of the lines forming the sides of $PQR$.
+
+      Specifically, $AB$ lies on line $PR$ (or $RP$), $CD$ lies on line $PQ$, $EF$ lies on line $QR$?
+      Or some permutation.
+
+      Let''s trace the lines.
+
+      Line AB contains segment AB.
+
+      Line CD contains segment CD.
+
+      Line EF contains segment EF.
+
+      These three lines form triangle $PQR$.
+
+      Let''s determine the relationship between the side length $s$ of the hexagon and the sides of triangle
+      $PQR$.
+
+      Consider the small triangles cut off from the corners of $PQR$ to form the hexagon.
+
+      The vertices of the hexagon are $A, B, C, D, E, F$.
+
+      $A$ and $B$ are on one side of $PQR$? No.
+
+      Let''s look at the structure.
+
+      The hexagon is $ABCDEF$.
+
+      Side $AB$ is on a line. Side $BC$ connects line $AB$ to line $CD$? No.
+
+      Let''s visualize the "truncated triangle" model.
+
+      If we take a triangle and cut off its corners with lines, we get a hexagon.
+
+      If the cuts are such that the resulting hexagon has equal sides, what does that imply?
+
+      Let the large triangle be $T$. The sides of $T$ are the extensions of alternating sides of the hexagon.
+
+      So the sides of the hexagon $AB, CD, EF$ lie on the sides of the large triangle $T$.
+
+      The other sides $BC, DE, FA$ are the "cuts".
+
+      Let the vertices of $T$ be $P, Q, R$.
+
+      Let $P$ be the intersection of lines $AB$ and $CD$? No, adjacent sides of the hexagon don''t necessarily
+      form the corners.
+
+      The lines are $L_1$ (contains AB), $L_2$ (contains CD), $L_3$ (contains EF).
+
+      These form triangle $PQR$.
+
+      $P = L_1 \cap L_2$? No, $AB$ and $CD$ are not adjacent in the sense of sharing a vertex? $B$ and
+      $C$ are connected by $BC$.
+
+      So $L_1$ (AB) and $L_2$ (CD) intersect at $P$. The segment $BC$ connects $L_1$ and $L_2$.
+
+      So triangle $PBC$ is formed at corner $P$.
+
+      Similarly, $L_2$ (CD) and $L_3$ (EF) intersect at $Q$. Segment $DE$ connects $L_2$ and $L_3$. Triangle
+      $QDE$ is at corner $Q$.
+
+      Similarly, $L_3$ (EF) and $L_1$ (AB) intersect at $R$. Segment $FA$ connects $L_3$ and $L_1$. Triangle
+      $RFA$ is at corner $R$.
+
+      The hexagon is the remaining part of triangle $PQR$ after removing $\triangle PBC$, $\triangle QDE$,
+      and $\triangle RFA$.
+
+      The sides of the hexagon are:
+
+      $AB$ on $L_1$ (side $PR$ of $PQR$? No, $R$ is on $L_1$, $P$ is on $L_1$. So side $RP$ of $PQR$ contains
+      $AB$?
+
+      Let''s check the order.
+
+      Vertices of $PQR$: $P = AB \cap CD$, $Q = CD \cap EF$, $R = EF \cap AB$.
+
+      Side $PQ$ is on line $CD$. It contains segment $CD$.
+
+      Side $QR$ is on line $EF$. It contains segment $EF$.
+
+      Side $RP$ is on line $AB$. It contains segment $AB$.
+
+      So, $P, Q, R$ are the vertices of the large triangle.
+
+      The side lengths of $\triangle PQR$ are given as 200, 240, 300.
+
+      Let $PQ = a$, $QR = b$, $RP = c$.
+
+      The segments $CD, EF, AB$ are parts of these sides.
+
+      $CD$ is on $PQ$. $EF$ is on $QR$. $AB$ is on $RP$.
+
+      The "cut" triangles are $\triangle PBC$, $\triangle QDE$, $\triangle RFA$.
+
+      Let''s analyze $\triangle PBC$.
+
+      The vertices are $P, B, C$.
+
+      $B$ is on $RP$ (line $AB$). $C$ is on $PQ$ (line $CD$).
+
+      $BC$ is a side of the hexagon, so $BC = s$.
+
+      Angle $\angle P$ is the angle of the large triangle at vertex $P$.
+
+      What is the shape of $\triangle PBC$?
+
+      We know $AB \parallel DE$, $BC \parallel EF$, $CD \parallel FA$.
+
+      Also the hexagon is equilateral, so $AB=BC=CD=DE=EF=FA=s$.
+
+      In $\triangle PBC$, $PB$ is part of side $RP$. $PC$ is part of side $PQ$.
+
+      $BC = s$.
+
+      Is $\triangle PBC$ equilateral?
+
+      Let''s check the angles.
+
+      The line $BC$ is parallel to $EF$. $EF$ lies on line $QR$.
+
+      So $BC \parallel QR$.
+
+      In $\triangle PQR$, the line $BC$ cuts sides $PR$ and $PQ$? No, $B$ is on $PR$ and $C$ is on $PQ$.
+
+      If $BC \parallel QR$, then $\triangle PBC$ is similar to $\triangle PQR$.
+
+      Similarly, $DE$ connects $PQ$ and $QR$?
+
+      $D$ is on $PQ$, $E$ is on $QR$.
+
+      $DE$ is a side of the hexagon, $DE=s$.
+
+      $DE \parallel FA$. $FA$ connects $QR$ and $PR$?
+
+      $F$ is on $QR$, $A$ is on $PR$.
+
+      So $FA$ cuts sides $QR$ and $PR$.
+
+      Since $DE \parallel FA$, and $FA$ connects $QR$ and $PR$, let''s see the orientation.
+
+      Actually, we have three small triangles at the corners:
+
+      1. $\triangle PBC$ at corner $P$. Sides $PB, PC$ are on $PR, PQ$. Base $BC=s$.
+
+      2. $\triangle QDE$ at corner $Q$. Sides $QD, QE$ are on $PQ, QR$. Base $DE=s$.
+
+      3. $\triangle RFA$ at corner $R$. Sides $RF, RA$ are on $QR, PR$. Base $FA=s$.
+
+
+      Let $\alpha, \beta, \gamma$ be the angles of $\triangle PQR$ at $P, Q, R$.
+
+      Since $BC \parallel EF$ and $EF$ is on $QR$, $BC \parallel QR$.
+
+      Therefore, $\triangle PBC \sim \triangle PQR$.
+
+      Since $\triangle PBC$ is similar to $\triangle PQR$, and $BC=s$ is the side corresponding to $QR=b$
+      in the large triangle.
+
+      Let $k_P$ be the scaling factor for $\triangle PBC$.
+
+      Then $BC / QR = s / b = k_P$.
+
+      So the sides $PB$ and $PC$ are $k_P \cdot PR = \frac{s}{b} c$ and $k_P \cdot PQ = \frac{s}{b} a$.
+
+      Wait, $PB$ is on $PR$ (side $c$) and $PC$ is on $PQ$ (side $a$).
+
+      So $PB = \frac{s}{b} c$ and $PC = \frac{s}{b} a$.
+
+
+      Similarly, consider $\triangle QDE$.
+
+      $DE \parallel FA$. $FA$ is on the line connecting $R$ (on $PR$) and $F$ (on $QR$)? No.
+
+      $F$ is on $QR$ and $A$ is on $PR$. So $FA$ connects sides $QR$ and $PR$.
+
+      The third side of $\triangle PQR$ is $PR$.
+
+      Does $DE$ parallel $PR$?
+
+      Let''s check the parallel conditions again.
+
+      $AB \parallel DE$. $AB$ is on $PR$. So $DE \parallel PR$.
+
+      Therefore, $\triangle QDE \sim \triangle QPR$ (vertices $Q, D, E$ correspond to $Q, P, R$? No).
+
+      $D$ is on $PQ$, $E$ is on $QR$. $DE \parallel PR$.
+
+      So $\triangle QDE \sim \triangle QPR$ is incorrect notation. $\triangle QDE \sim \triangle QRP$?
+
+      Angle $Q$ is common. $DE \parallel PR$ implies $\angle QDE = \angle QPR$ and $\angle QED = \angle
+      QRP$.
+
+      So $\triangle QDE \sim \triangle QPR$.
+
+      The base is $DE=s$. The corresponding side in $\triangle QPR$ is $PR=c$.
+
+      So the ratio is $s/c$.
+
+      The sides $QD$ and $QE$ are:
+
+      $QD = \frac{s}{c} \cdot PQ = \frac{s}{c} a$.
+
+      $QE = \frac{s}{c} \cdot QR = \frac{s}{c} b$.
+
+
+      Similarly, consider $\triangle RFA$.
+
+      $FA \parallel BC$. $BC \parallel QR$ (from first step). So $FA \parallel QR$.
+
+      $F$ is on $QR$? No, $F$ is on $QR$ (line EF). $A$ is on $PR$ (line AB).
+
+      Wait, $R$ is intersection of $AB$ and $EF$. So $A$ is on $PR$ and $F$ is on $QR$.
+
+      Triangle $RFA$ has vertices $R, F, A$.
+
+      $F$ is on $QR$, $A$ is on $PR$.
+
+      Base $FA = s$.
+
+      Since $FA \parallel QR$? No, $FA$ connects $PR$ and $QR$.
+
+      If $FA \parallel QR$, it would be a segment crossing the triangle? No, $F$ and $A$ are on the sides
+      meeting at $R$.
+
+      So $FA$ is the base of $\triangle RFA$ at corner $R$.
+
+      The side opposite to $R$ in $\triangle PQR$ is $PQ=a$.
+
+      Does $FA \parallel PQ$?
+
+      We established $BC \parallel QR$, $DE \parallel PR$.
+
+      The third pair is $AB \parallel DE$? No, $AB \parallel DE$ is given.
+
+      $AB$ is on $PR$. $DE$ is on a line parallel to $PR$? No, $DE$ is a segment.
+
+      The condition is $AB \parallel DE$.
+
+      Also $BC \parallel EF$. $BC$ is in $\triangle PBC$, $EF$ is on $QR$. So $BC \parallel QR$.
+
+      Also $CD \parallel FA$. $CD$ is on $PQ$. So $FA \parallel PQ$.
+
+      Yes! $FA \parallel PQ$.
+
+      So $\triangle RFA \sim \triangle RQP$.
+
+      Base $FA=s$. Corresponding side $PQ=a$.
+
+      Ratio is $s/a$.
+
+      Sides $RF$ and $RA$ are:
+
+      $RF = \frac{s}{a} \cdot QR = \frac{s}{a} b$.
+
+      $RA = \frac{s}{a} \cdot PR = \frac{s}{a} c$.
+
+
+      Now we can express the side lengths of the large triangle $PQR$ in terms of $s$ and the segments.
+
+      Side $PQ$ (length $a$) consists of segments $PC + CD + DQ$.
+
+      From $\triangle PBC$: $PC = \frac{s}{b} a$.
+
+      From $\triangle QDE$: $QD = \frac{s}{c} a$.
+
+      Segment $CD = s$.
+
+      So, $a = PC + CD + DQ = \frac{s}{b} a + s + \frac{s}{c} a$.
+
+      Divide by $s$:
+
+      $\frac{a}{s} = \frac{a}{b} + 1 + \frac{a}{c}$.
+
+      $\frac{a}{s} = a (\frac{1}{b} + \frac{1}{c}) + 1$.
+
+      $\frac{a}{s} - 1 = a (\frac{b+c}{bc})$.
+
+      $\frac{a-s}{s} = a \frac{b+c}{bc}$.
+
+      $\frac{1}{s} - \frac{1}{a} = \frac{b+c}{abc}$? No.
+
+      Let''s rearrange to solve for $s$.
+
+      $a = s \frac{a}{b} + s + s \frac{a}{c}$.
+
+      $a = s ( \frac{a}{b} + 1 + \frac{a}{c} )$.
+
+      $s = \frac{a}{\frac{a}{b} + 1 + \frac{a}{c}} = \frac{abc}{ac + bc + ab}$.
+
+      Let''s verify this formula with the other sides.
+
+      Side $QR$ (length $b$) consists of $QE + EF + FR$.
+
+      $QE = \frac{s}{c} b$.
+
+      $EF = s$.
+
+      $RF = \frac{s}{a} b$.
+
+      $b = \frac{s}{c} b + s + \frac{s}{a} b = s ( \frac{b}{c} + 1 + \frac{b}{a} )$.
+
+      $s = \frac{b}{\frac{b}{c} + 1 + \frac{b}{a}} = \frac{abc}{ab + ac + bc}$.
+
+      Same expression.
+
+      Side $RP$ (length $c$) consists of $RA + AB + BP$.
+
+      $RA = \frac{s}{a} c$.
+
+      $AB = s$.
+
+      $PB = \frac{s}{b} c$.
+
+      $c = \frac{s}{a} c + s + \frac{s}{b} c = s ( \frac{c}{a} + 1 + \frac{c}{b} )$.
+
+      $s = \frac{c}{\frac{c}{a} + 1 + \frac{c}{b}} = \frac{abc}{bc + ab + ac}$.
+
+      Same expression.
+
+
+      So the side length $s$ of the equilateral hexagon is given by:
+
+      $s = \frac{abc}{ab + bc + ca}$
+
+      where $a, b, c$ are the side lengths of the triangle formed by the extensions.
+
+
+      The given side lengths are 200, 240, and 300.
+
+      Let $a = 200, b = 240, c = 300$.
+
+      We need to calculate $s$.
+
+      First, simplify the numbers by dividing by a common factor.
+
+      $200 = 20 \times 10$
+
+      $240 = 24 \times 10$
+
+      $300 = 30 \times 10$
+
+      Common factor 20?
+
+      $200 = 20 \times 10$
+
+      $240 = 20 \times 12$
+
+      $300 = 20 \times 15$
+
+      Let $a = 10k, b = 12k, c = 15k$ with $k=20$.
+
+      Then $s = \frac{(10k)(12k)(15k)}{(10k)(12k) + (12k)(15k) + (15k)(10k)}$.
+
+      $s = \frac{1800 k^3}{120 k^2 + 180 k^2 + 150 k^2}$.
+
+      $s = \frac{1800 k^3}{450 k^2}$.
+
+      $s = \frac{1800}{450} k$.
+
+      $1800 / 450 = 4$.
+
+      So $s = 4k$.
+
+      Since $k = 20$, $s = 4 \times 20 = 80$.
+
+
+      Let''s double check the calculation.
+
+      $a=200, b=240, c=300$.
+
+      $ab = 200 \times 240 = 48000$.
+
+      $bc = 240 \times 300 = 72000$.
+
+      $ca = 300 \times 200 = 60000$.
+
+      Sum $ab+bc+ca = 48000 + 72000 + 60000 = 180000$.
+
+      Product $abc = 200 \times 240 \times 300 = 48000 \times 300 = 14400000$.
+
+      $s = \frac{14400000}{180000} = \frac{1440}{18}$.
+
+      $1440 / 18$:
+
+      $18 \times 10 = 180$.
+
+      $18 \times 100 = 1800$.
+
+      $18 \times 80 = 18 \times 8 \times 10 = 144 \times 10 = 1440$.
+
+      So $s = 80$.
+
+
+      The side length is an integer.
+
+      The answer is 80.
+
+
+      Let''s quickly re-verify the geometric setup.
+
+      Hexagon $ABCDEF$.
+
+      Sides $AB, BC, CD, DE, EF, FA$.
+
+      Extensions of $AB, CD, EF$ form $\triangle PQR$.
+
+      $P = AB \cap CD$.
+
+      $Q = CD \cap EF$.
+
+      $R = EF \cap AB$.
+
+      Side $PQ$ is on line $CD$. Contains $CD$.
+
+      Side $QR$ is on line $EF$. Contains $EF$.
+
+      Side $RP$ is on line $AB$. Contains $AB$.
+
+      This matches my derivation.
+
+      The small triangles are:
+
+      At $P$: $\triangle PBC$. Vertices $P, B, C$.
+
+      $B$ is on $RP$ (line $AB$). $C$ is on $PQ$ (line $CD$).
+
+      $BC$ connects them.
+
+      Since $BC \parallel EF$ and $EF$ is on $QR$, $BC \parallel QR$.
+
+      So $\triangle PBC \sim \triangle PQR$.
+
+      Base $BC=s$. Side $QR=b$.
+
+      Ratio $s/b$.
+
+      Sides $PB = s/b \cdot c$, $PC = s/b \cdot a$.
+
+      This assumes $PB$ corresponds to $PR=c$ and $PC$ corresponds to $PQ=a$.
+
+      In $\triangle PQR$, angle $P$ is between $PR$ and $PQ$.
+
+      In $\triangle PBC$, angle $P$ is between $PB$ and $PC$.
+
+      $B$ is on $PR$, $C$ is on $PQ$.
+
+      So $PB$ is along $PR$, $PC$ is along $PQ$.
+
+      Similarity $\triangle PBC \sim \triangle PQR$ implies $PB/PR = PC/PQ = BC/QR$.
+
+      $PB/c = PC/a = s/b$.
+
+      $PB = sc/b$, $PC = sa/b$.
+
+      This matches.
+
+
+      At $Q$: $\triangle QDE$. Vertices $Q, D, E$.
+
+      $D$ is on $PQ$ (line $CD$). $E$ is on $QR$ (line $EF$).
+
+      $DE$ connects them.
+
+      $DE \parallel FA$. $FA$ connects $F$ (on $QR$) and $A$ (on $PR$).
+
+      Is $FA \parallel PQ$?
+
+      $CD \parallel FA$. $CD$ is on $PQ$. So $FA \parallel PQ$.
+
+      So $\triangle QDE \sim \triangle QRP$?
+
+      Angle $Q$ is common.
+
+      $D$ on $PQ$, $E$ on $QR$.
+
+      $DE \parallel PR$?
+
+      $AB \parallel DE$. $AB$ is on $PR$. So $DE \parallel PR$.
+
+      So $\triangle QDE \sim \triangle QRP$ is wrong.
+
+      $\triangle QDE$ has sides on $PQ$ and $QR$. Base $DE$ is parallel to $PR$.
+
+      So $\triangle QDE \sim \triangle QPR$? No, vertices $Q, D, E$ correspond to $Q, P, R$.
+
+      $D$ is on $QP$, $E$ is on $QR$.
+
+      $DE \parallel PR$.
+
+      So $\triangle QDE \sim \triangle QPR$ is correct correspondence $Q-Q, D-P, E-R$.
+
+      Ratio $DE/PR = s/c$.
+
+      $QD/QP = QE/QR = s/c$.
+
+      $QD/a = s/c \implies QD = sa/c$.
+
+      $QE/b = s/c \implies QE = sb/c$.
+
+      This matches.
+
+
+      At $R$: $\triangle RFA$. Vertices $R, F, A$.
+
+      $F$ on $QR$, $A$ on $PR$.
+
+      $FA$ connects them.
+
+      $FA \parallel PQ$ (since $CD \parallel FA$ and $CD$ on $PQ$).
+
+      So $\triangle RFA \sim \triangle RQP$?
+
+      Angle $R$ common.
+
+      $F$ on $RQ$, $A$ on $RP$.
+
+      $FA \parallel PQ$.
+
+      So $\triangle RFA \sim \triangle RQP$ corresponds $R-R, F-Q, A-P$.
+
+      Ratio $FA/PQ = s/a$.
+
+      $RF/RQ = RA/RP = s/a$.
+
+      $RF/b = s/a \implies RF = sb/a$.
+
+      $RA/c = s/a \implies RA = sc/a$.
+
+      This matches.
+
+
+      Sum of segments on side $PQ$ (length $a$):
+
+      $PQ = PC + CD + DQ$.
+
+      $PC = sa/b$.
+
+      $CD = s$.
+
+      $DQ = sa/c$.
+
+      $a = s(a/b + 1 + a/c)$.
+
+      $s = a / (a/b + 1 + a/c) = abc / (ac + bc + ab)$.
+
+
+      The calculation holds.
+
+      $a=200, b=240, c=300$.
+
+      $s = 80$.
+
+
+      One detail: "convex equilateral hexagon".
+
+      Does $s=80$ produce a convex hexagon?
+
+      The side lengths of the large triangle are 200, 240, 300.
+
+      The segments cut off are:
+
+      $PC = 80 \cdot 200 / 240 = 80 \cdot 5/6 = 400/6 = 200/3 \approx 66.7$.
+
+      $DQ = 80 \cdot 200 / 300 = 80 \cdot 2/3 = 160/3 \approx 53.3$.
+
+      $CD = 80$.
+
+      Sum $PC + CD + DQ = 66.7 + 80 + 53.3 = 200 = a$. Correct.
+
+      $QE = 80 \cdot 240 / 300 = 80 \cdot 4/5 = 64$.
+
+      $RF = 80 \cdot 240 / 200 = 80 \cdot 6/5 = 96$.
+
+      $EF = 80$.
+
+      Sum $QE + EF + RF = 64 + 80 + 96 = 240 = b$. Correct.
+
+      $RA = 80 \cdot 300 / 200 = 80 \cdot 3/2 = 120$.
+
+      $PB = 80 \cdot 300 / 240 = 80 \cdot 5/4 = 100$.
+
+      $AB = 80$.
+
+      Sum $RA + AB + PB = 120 + 80 + 100 = 300 = c$. Correct.
+
+
+      Since all segment lengths are positive and less than the side of the triangle, the hexagon is well-defined
+      and convex.
+
+      The side length is 80.'
+    proposals:
+    - title: Calculate the side length s using the formula s = abc / (ab + bc + ca)
+      prob: 0.9323021114907444
+      logprob: -0.07009836286306381
+      node:
+        thought: 'Using the derived formula s = abc / (ab + bc + ca) with a=200, b=240, c=300.
+
+          ab = 48000
+
+          bc = 72000
+
+          ca = 60000
+
+          Sum = 180000
+
+          Product = 14400000
+
+          s = 14400000 / 180000 = 80.'
+        proposals:
+        - title: Final Answer is 80
+          prob: 0.9994314330343254
+          logprob: -0.0005687286611646414
+          node:
+            thought: 'The calculation yields 80. The geometric verification confirms the consistency of
+              the segments. The hexagon is convex and equilateral with side length 80.
+
+              <answer>80</answer>'
+            answer: true
+    - title: Verify the geometric configuration and similarity ratios
+      prob: 0.06753573592300688
+      logprob: -2.695098400115967

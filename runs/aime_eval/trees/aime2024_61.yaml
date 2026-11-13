@@ -1,0 +1,980 @@
+proposals:
+- title: 'Let $ABC$ be a triangle inscribed in circle $\omega$. Let the tangents to $\omega$ at $B$ and
+    $C$ intersect at point $D$, and let $\overline{AD}$ intersect $\omega$ at $P$. If $AB=5$, $BC=9$,
+    and $AC=10$, $AP$ can be written as the form $\frac{m}{n}$, where $m$ and $n$ are relatively prime
+    integers. Find $m + n$.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9999220518770383
+  logprob: -7.79511610744521e-05
+  node:
+    thought: 'The problem involves a triangle $ABC$ inscribed in a circle $\omega$. Tangents at $B$ and
+      $C$ meet at $D$. The line $AD$ intersects the circle again at $P$. We are given side lengths $AB=c=5$,
+      $BC=a=9$, $AC=b=10$. We need to find the length $AP$.
+
+      A key property of this configuration is that $D$ is the pole of the chord $BC$. The line $AD$ is
+      a symmedian of the triangle $ABC$ if we consider the homothety or specific properties related to
+      the symmedian point, but more directly, there is a known ratio for the segment $AP$.
+
+      Specifically, for the symmedian from $A$ intersecting the circumcircle at $P$ (often denoted as
+      the Lemoine point related intersection, but here $P$ is on the circle), there is a relationship
+      involving the sides.
+
+      Actually, $D$ is the intersection of tangents at $B$ and $C$. The line $AD$ is the $A$-symmedian
+      of $\triangle ABC$.
+
+      Let $K$ be the symmedian point. The line $AD$ passes through $K$ and intersects the circumcircle
+      at $P$.
+
+      There is a known formula for the length of the symmedian chord $AP$.
+
+      Alternatively, we can use the property that $DB^2 = DC^2 = DB \cdot DC$? No, $DB=DC$ is true since
+      tangents from a point are equal.
+
+      Also, $\triangle DBC$ is isosceles.
+
+      A well-known theorem states that $AP \cdot AD = AB \cdot AC$? No, that''s for the altitude or median
+      in some contexts.
+
+      Let''s recall the property: The line $AD$ is the symmedian. The symmedian from $A$ intersects the
+      circumcircle at $P$.
+
+      The length of the symmedian chord $AP$ is given by $AP = \frac{2bc}{b^2+c^2} m_a$? No.
+
+      Let''s derive it or find the correct formula.
+
+      Property: $AP = \frac{2bc}{b^2+c^2} \cdot AD$? No.
+
+      Let''s use the power of point $D$. $DB^2 = DP \cdot DA$.
+
+      So $DP = DB^2 / DA$.
+
+      Then $AP = AD - DP = AD - \frac{DB^2}{AD} = \frac{AD^2 - DB^2}{AD}$.
+
+      We need to calculate $AD$ and $DB$.
+
+      First, find $DB$. In $\triangle ABC$, let $R$ be the circumradius.
+
+      $DB = R \tan A$? Or more simply, in $\triangle DBC$, $\angle BDC = 180^\circ - 2\angle DBC$.
+
+      Since $DB$ is tangent to $\omega$ at $B$, $\angle DBC = \angle BAC = A$ (angle between tangent and
+      chord).
+
+      Wait, the angle between tangent $DB$ and chord $BC$ is equal to the angle in the alternate segment,
+      which is $\angle BAC = A$.
+
+      So $\angle DBC = A$. Similarly $\angle DCB = A$.
+
+      Thus $\triangle DBC$ is isosceles with base angles $A$.
+
+      The vertex angle $\angle BDC = 180^\circ - 2A$.
+
+      By Sine Rule in $\triangle DBC$:
+
+      $\frac{DB}{\sin A} = \frac{BC}{\sin(180^\circ - 2A)} = \frac{a}{\sin 2A}$.
+
+      So $DB = \frac{a \sin A}{\sin 2A} = \frac{a \sin A}{2 \sin A \cos A} = \frac{a}{2 \cos A}$.
+
+      We can find $\cos A$ from $\triangle ABC$ using Law of Cosines.
+
+      $a=9, b=10, c=5$.
+
+      $\cos A = \frac{b^2 + c^2 - a^2}{2bc} = \frac{10^2 + 5^2 - 9^2}{2 \cdot 10 \cdot 5} = \frac{100
+      + 25 - 81}{100} = \frac{44}{100} = \frac{11}{25}$.
+
+      So $\cos A = \frac{11}{25}$.
+
+      Then $DB = \frac{9}{2 \cdot \frac{11}{25}} = \frac{9 \cdot 25}{22} = \frac{225}{22}$.
+
+      Now we need $AD$.
+
+      In $\triangle ABD$, we know $AB=5$, $DB=\frac{225}{22}$, and $\angle ABD$.
+
+      $\angle ABD = \angle ABC + \angle CBD = B + A$.
+
+      Wait, is $D$ inside or outside? $D$ is outside the circle.
+
+      The angle $\angle ABD$ is the angle between side $AB$ and tangent $BD$.
+
+      The tangent $BD$ makes angle $A$ with $BC$.
+
+      The angle $\angle ABC = B$.
+
+      So $\angle ABD = B + A$?
+
+      Let''s check the position. The tangent at $B$ goes "away" from $C$ relative to the center?
+
+      Actually, the angle between chord $AB$ and tangent $BD$ is equal to $\angle ACB = C$.
+
+      So $\angle DBA = C$.
+
+      Wait, let''s verify. The angle between tangent at $B$ and chord $BA$ is equal to the angle in the
+      alternate segment, which is $\angle BCA = C$.
+
+      So in $\triangle ABD$, the sides are $AB=c=5$, $DB=\frac{225}{22}$, and the included angle $\angle
+      ABD = C$.
+
+      We can find $AD^2$ using Law of Cosines in $\triangle ABD$.
+
+      $\cos C = \frac{a^2 + b^2 - c^2}{2ab} = \frac{9^2 + 10^2 - 5^2}{2 \cdot 9 \cdot 10} = \frac{81 +
+      100 - 25}{180} = \frac{156}{180} = \frac{13}{15}$.
+
+      $AD^2 = AB^2 + DB^2 - 2 AB \cdot DB \cos C$.
+
+      $AD^2 = 5^2 + \left(\frac{225}{22}\right)^2 - 2 \cdot 5 \cdot \frac{225}{22} \cdot \frac{13}{15}$.
+
+      Let''s compute this value.
+
+      Then $AP = \frac{AD^2 - DB^2}{AD}$.
+
+      This seems computable.
+
+      Let''s refine the calculation steps.'
+    proposals:
+    - title: Calculate $\cos A$ and $\cos C$ using Law of Cosines.
+      prob: 0.9905454606093573
+      logprob: -0.009499517269432545
+      node:
+        thought: 'Let''s calculate $\cos A$ and $\cos C$.
+
+          Given $a=9, b=10, c=5$.
+
+          $\cos A = \frac{b^2+c^2-a^2}{2bc} = \frac{100+25-81}{100} = \frac{44}{100} = \frac{11}{25}$.
+
+          $\cos C = \frac{a^2+b^2-c^2}{2ab} = \frac{81+100-25}{180} = \frac{156}{180}$.
+
+          Simplify $\frac{156}{180}$: divide by 12. $156/12 = 13$, $180/12 = 15$. So $\cos C = \frac{13}{15}$.'
+        proposals:
+        - title: Proceed to calculate $DB$.
+          prob: 0.9856264244753898
+          logprob: -0.014477876015007496
+          node:
+            thought: 'Calculate $DB$.
+
+              Formula: $DB = \frac{a}{2 \cos A}$.
+
+              $a=9, \cos A = \frac{11}{25}$.
+
+              $DB = \frac{9}{2 \cdot \frac{11}{25}} = \frac{9 \cdot 25}{22} = \frac{225}{22}$.'
+            proposals:
+            - title: Calculate $AD^2$.
+              prob: 0.97952344739998
+              logprob: -0.02068910375237465
+              node:
+                thought: 'Calculate $AD^2$ using Law of Cosines in $\triangle ABD$.
+
+                  $AB = 5$, $DB = \frac{225}{22}$, $\angle ABD = C$, $\cos C = \frac{13}{15}$.
+
+                  $AD^2 = AB^2 + DB^2 - 2 AB \cdot DB \cos C$.
+
+                  $AD^2 = 25 + \left(\frac{225}{22}\right)^2 - 2(5)\left(\frac{225}{22}\right)\left(\frac{13}{15}\right)$.
+
+                  Let''s simplify the terms.
+
+                  Term 1: $25$.
+
+                  Term 2: $\left(\frac{225}{22}\right)^2 = \frac{50625}{484}$.
+
+                  Term 3: $2 \cdot 5 \cdot \frac{225}{22} \cdot \frac{13}{15} = 10 \cdot \frac{225}{22}
+                  \cdot \frac{13}{15}$.
+
+                  $\frac{10}{15} = \frac{2}{3}$.
+
+                  So Term 3 = $2 \cdot \frac{225}{22} \cdot 13 \cdot \frac{2}{3}$? No.
+
+                  $10 \cdot \frac{225}{22} \cdot \frac{13}{15} = \frac{10}{15} \cdot \frac{225 \cdot 13}{22}
+                  = \frac{2}{3} \cdot \frac{225 \cdot 13}{22}$.
+
+                  $225 / 3 = 75$.
+
+                  So $\frac{2 \cdot 75 \cdot 13}{22} = \frac{150 \cdot 13}{22} = \frac{75 \cdot 13}{11}
+                  = \frac{975}{11}$.
+
+                  To combine with other terms, let''s use a common denominator.
+
+                  The denominators are 1, 484, 11. LCM is 484.
+
+                  $25 = \frac{25 \cdot 484}{484} = \frac{12100}{484}$.
+
+                  Term 3 = $\frac{975}{11} = \frac{975 \cdot 44}{484}$.
+
+                  $975 \cdot 44 = 975 \cdot 4 \cdot 11 = 3900 \cdot 11 = 42900$.
+
+                  So Term 3 = $\frac{42900}{484}$.
+
+                  $AD^2 = \frac{12100 + 50625 - 42900}{484}$.
+
+                  $12100 + 50625 = 62725$.
+
+                  $62725 - 42900 = 19825$.
+
+                  So $AD^2 = \frac{19825}{484}$.'
+                proposals:
+                - title: Calculate $AD$.
+                  prob: 0.9967397228380405
+                  logprob: -0.003265603445470333
+                  node:
+                    thought: 'Calculate $AD$.
+
+                      $AD = \sqrt{\frac{19825}{484}} = \frac{\sqrt{19825}}{22}$.
+
+                      Check if 19825 is a perfect square.
+
+                      $19825$ ends in 25, so divisible by 25.
+
+                      $19825 / 25 = 793$.
+
+                      Is 793 a square? $\sqrt{793} \approx 28.1$. $28^2 = 784$, $29^2 = 841$. Not a square.
+
+                      So $AD = \frac{5\sqrt{793}}{22}$.
+
+                      This looks messy. Did I make a mistake?
+
+                      Let''s re-evaluate the formula for $AP$.
+
+                      There is a known result: $AP = \frac{2bc}{b^2+c^2} \cdot AD$? No.
+
+                      Let''s check the relation $AP \cdot AD = AB \cdot AC$? No.
+
+                      Power of point $D$: $DB^2 = DP \cdot DA$.
+
+                      $DP = DB^2 / DA$.
+
+                      $AP = AD - DP = AD - \frac{DB^2}{AD} = \frac{AD^2 - DB^2}{AD}$.
+
+                      Let''s compute $AD^2 - DB^2$.
+
+                      $AD^2 = \frac{19825}{484}$.
+
+                      $DB^2 = \left(\frac{225}{22}\right)^2 = \frac{50625}{484}$.
+
+                      Wait, $AD^2 < DB^2$?
+
+                      $19825 < 50625$. This implies $AD < DB$.
+
+                      If $AD < DB$, then $DP = DB^2/AD > AD$, so $P$ would be on the extension of $AD$
+                      past $A$?
+
+                      No, $D, P, A$ are collinear. $D$ is outside. Ray $DA$ intersects circle at $P$ and
+                      then $A$? Or $P$ and $A$?
+
+                      The line segment $AD$ intersects the circle at $P$.
+
+                      Usually, the order is $D - P - A$ or $D - A - P$?
+
+                      $D$ is the intersection of tangents at $B$ and $C$. $A$ is on the circle.
+
+                      The segment $AD$ connects a point outside ($D$) to a point on the circle ($A$).
+
+                      It must intersect the circle at another point $P$.
+
+                      Since $A$ is on the circle, $P$ is the other intersection point.
+
+                      The order of points on the line is $D, P, A$ if $P$ is between $D$ and $A$.
+
+                      Or $D, A, P$ if $A$ is between $D$ and $P$.
+
+                      Let''s check the position.
+
+                      The symmedian from $A$ goes through the interior of the triangle to the opposite
+                      side, then to the circumcircle.
+
+                      Wait, $D$ is the pole of $BC$. The line $AD$ is the symmedian.
+
+                      The symmedian intersects the circumcircle at $P$.
+
+                      The standard configuration is that the symmedian from $A$ intersects $BC$ at $L$
+                      and the circumcircle at $P$.
+
+                      $D$ is outside. The line is $D-L-P-A$? Or $D-P-L-A$?
+
+                      Actually, $D$ is "far" from $A$. The line starts at $D$, hits the circle at $P$,
+                      goes through the interior, hits $BC$, then hits $A$?
+
+                      No, $A$ is a vertex. The line $AD$ passes through the triangle.
+
+                      Let''s visualize. $D$ is "below" $BC$. $A$ is "above" $BC$.
+
+                      The line segment $AD$ crosses $BC$.
+
+                      The circle passes through $A, B, C$.
+
+                      The segment $AD$ intersects the circle at $A$ and another point $P$.
+
+                      Since $D$ is outside, and $A$ is on the boundary, the segment $AD$ lies partly outside
+                      and partly inside?
+
+                      No, the chord is $AP$. The point $D$ is such that $D, P, A$ are collinear.
+
+                      Since $D$ is outside, the ray $DA$ enters the circle at $P$ and exits at $A$? Or
+                      enters at $A$ and exits at $P$?
+
+                      The power of point $D$ is $DB^2$.
+
+                      $DB^2 = \vec{DP} \cdot \vec{DA}$.
+
+                      Since lengths are positive, $DP \cdot DA = DB^2$.
+
+                      If $P$ lies between $D$ and $A$, then $DP < DA$.
+
+                      Then $AP = DA - DP$.
+
+                      If $A$ lies between $D$ and $P$, then $DA < DP$.
+
+                      Then $AP = DP - DA$.
+
+                      In our calculation, $AD^2 = \frac{19825}{484} \approx 41$.
+
+                      $DB^2 = \frac{50625}{484} \approx 104$.
+
+                      So $DB^2 > AD^2$, which means $DB > AD$.
+
+                      Since $DP \cdot DA = DB^2$, and $DB > AD$, then $DP = DB^2 / DA > AD$.
+
+                      This implies $DP > DA$.
+
+                      So $A$ lies between $D$ and $P$.
+
+                      The order is $D - A - P$.
+
+                      So $AP = DP - DA = \frac{DB^2}{AD} - AD = \frac{DB^2 - AD^2}{AD}$.
+
+                      Let''s verify this geometry.
+
+                      Symmedian from $A$ intersects circumcircle at $P$.
+
+                      $D$ is intersection of tangents at $B, C$.
+
+                      It is a known property that $AD$ is the symmedian.
+
+                      Does the symmedian intersect the circle at $P$ such that $A$ is between $D$ and
+                      $P$?
+
+                      Let''s check with an equilateral triangle.
+
+                      $AB=BC=AC$. $D$ is at infinity? No, tangents are parallel.
+
+                      Let''s check with a specific triangle.
+
+                      If $\triangle ABC$ is isosceles with $AB=AC$, then $AD$ is the altitude/median.
+
+                      $D$ lies on the perpendicular bisector of $BC$.
+
+                      $A$ is on the perpendicular bisector.
+
+                      $D$ is outside. The line is the axis of symmetry.
+
+                      The circle intersects the axis at $A$ and the point diametrically opposite $A$,
+                      say $A''$.
+
+                      $D$ is such that $DB=DC$.
+
+                      In isosceles triangle, $D, O, A$ are collinear.
+
+                      $DB^2 = DO^2 - R^2$? No.
+
+                      Power of $D$ is $DB^2$.
+
+                      $DA \cdot DP = DB^2$.
+
+                      If $D$ and $A$ are on the same side of the center?
+
+                      Usually $D$ is "far" from $A$.
+
+                      For an acute triangle, the symmedian point $K$ is inside.
+
+                      The line $AK$ intersects the circle at $P$.
+
+                      $D$ is outside.
+
+                      The segment $AD$ connects $A$ to $D$.
+
+                      Does it contain $P$?
+
+                      $P$ is on the circle. $A$ is on the circle.
+
+                      The chord is $AP$.
+
+                      $D$ is outside.
+
+                      So the line from $D$ to $A$ must cross the circle at $P$ first?
+
+                      If $D$ is outside, and we draw a line to $A$ (on circle), the segment $DA$ intersects
+                      the circle at $A$ and potentially another point $P$.
+
+                      If the segment $DA$ is entirely outside except for $A$, then $P=A$? No.
+
+                      The line $AD$ is a secant line.
+
+                      It intersects the circle at two points. One is $A$. Let the other be $P$.
+
+                      Since $D$ is outside, the points on the line are ordered $D, P, A$ or $D, A, P$.
+
+                      This depends on whether $P$ is between $D$ and $A$ or $A$ is between $D$ and $P$.
+
+                      $DP \cdot DA = DB^2$.
+
+                      If $DP < DA$, then $P$ is between $D$ and $A$.
+
+                      If $DP > DA$, then $A$ is between $D$ and $P$.
+
+                      We found $DB > AD$, so $DP = DB^2/AD > AD$.
+
+                      So $A$ is between $D$ and $P$.
+
+                      This means the ray $DA$ goes from $D$ to $A$, passes through $A$, and hits the circle
+                      again at $P$?
+
+                      But $A$ is on the circle. The ray starts outside, hits the circle at some point,
+                      goes inside, and hits the other side.
+
+                      If $A$ is the *first* point hit, then $P$ is the second. Order $D, A, P$.
+
+                      If $A$ is the *second* point hit, then $P$ is the first. Order $D, P, A$.
+
+                      In our case, $DP > DA$, so $P$ is further from $D$ than $A$ is.
+
+                      So the order is $D, A, P$.
+
+                      This implies that the segment $AD$ does *not* contain $P$.
+
+                      The problem states "$\overline{AD}$ intersect $\omega$ at $P$".
+
+                      Usually, $\overline{AD}$ denotes the segment connecting $A$ and $D$.
+
+                      If the order is $D, A, P$, then $P$ is not on the segment $\overline{AD}$.
+
+                      This suggests a contradiction with my calculation or interpretation.
+
+                      Let''s re-read carefully: "$\overline{AD}$ intersect $\omega$ at $P$".
+
+                      This usually implies $P$ lies on the segment $AD$.
+
+                      This requires $DP < DA$, i.e., $DB < DA$.
+
+                      Let''s re-check $AD^2$ and $DB^2$.
+
+                      $AD^2 = \frac{19825}{484} \approx 40.96$.
+
+                      $DB^2 = \frac{50625}{484} \approx 104.6$.
+
+                      $AD \approx 6.4$. $DB \approx 10.2$.
+
+                      So $DB > AD$ is correct based on the calculation.
+
+                      Did I calculate $AD$ correctly?
+
+                      $\triangle ABD$. $AB=5$. $DB=225/22 \approx 10.2$. $\angle ABD = C$.
+
+                      $\cos C = 13/15 \approx 0.866$.
+
+                      $AD^2 = 25 + 104.6 - 2(5)(10.2)(0.866) = 129.6 - 88.3 = 41.3$.
+
+                      Calculation seems correct.
+
+                      So $DB > AD$.
+
+                      This implies $P$ is not on segment $AD$.
+
+                      However, the problem says "$\overline{AD}$ intersect $\omega$ at $P$".
+
+                      Maybe the line is $DA$, and $P$ is the intersection?
+
+                      If $P$ is not on the segment, the notation $\overline{AD} \cap \omega$ might be
+                      empty or just $A$?
+
+                      But it says "intersect ... at $P$". And $AP$ is a length.
+
+                      Perhaps the order is $D, P, A$?
+
+                      This would require $DB < AD$.
+
+                      Why would $DB < AD$?
+
+                      Let''s check the angle $\angle ABD$.
+
+                      Is $\angle ABD = C$?
+
+                      Tangent $DB$ and chord $BA$. Angle is $C$. Correct.
+
+                      Is it possible that $\angle ABD = 180 - C$?
+
+                      Depends on the direction of the tangent.
+
+                      There are two tangents at $B$. $D$ is the intersection of tangents at $B$ and $C$.
+
+                      For an acute triangle, the tangents at $B$ and $C$ intersect on the side of $BC$
+                      opposite to $A$.
+
+                      So $A$ and $D$ are on opposite sides of $BC$.
+
+                      The segment $AD$ crosses $BC$.
+
+                      The circle is convex.
+
+                      The chord $BC$ divides the circle into two arcs. $A$ is on the major arc (assuming
+                      acute).
+
+                      $D$ is outside.
+
+                      The line $AD$ intersects the circle at $A$ and $P$.
+
+                      Since $A$ and $D$ are on opposite sides of $BC$, and the circle bulges towards $D$?
+                      No, the circle is between $A$ and $D$?
+
+                      No, $BC$ is a chord. $A$ is on one side. $D$ is on the other.
+
+                      The segment $AD$ must cross the chord $BC$.
+
+                      The circle arc $BAC$ is on $A$''s side. The arc $BC$ (minor) is on $D$''s side?
+
+                      No, the circle is a single curve.
+
+                      The segment $AD$ connects a point on the circle ($A$) to a point outside ($D$).
+
+                      It must exit the circle at $A$?
+
+                      If it exits at $A$, it was inside before $A$.
+
+                      So it must have entered at $P$.
+
+                      So the order is $D - P - A$?
+
+                      No, $D$ is outside. $A$ is on boundary.
+
+                      If the segment $DA$ lies inside the circle except for $A$, then $P$ must be between
+                      $D$ and $A$.
+
+                      This requires $DP < DA$.
+
+                      But we found $DP > DA$.
+
+                      This implies the segment $DA$ lies *outside* the circle except for $A$?
+
+                      If so, the line enters at $P$ (further from $D$) and exits at $A$?
+
+                      No, $D$ is outside.
+
+                      If $DP > DA$, then $A$ is closer to $D$ than $P$.
+
+                      So the ray from $D$ hits $A$ first, then $P$.
+
+                      This means the segment $DA$ does not intersect the circle at any other point $P$
+                      *on the segment*.
+
+                      The intersection $P$ is on the extension of $DA$ past $A$.
+
+                      But the problem states "$\overline{AD}$ intersect $\omega$ at $P$".
+
+                      This implies $P$ is on the segment $AD$.
+
+                      Contradiction.
+
+
+                      Let''s re-evaluate the angle $\angle ABD$.
+
+                      Maybe $\angle ABD = 180 - C$?
+
+                      If the triangle is obtuse?
+
+                      $a=9, b=10, c=5$.
+
+                      $\cos A = 11/25 > 0$ (Acute).
+
+                      $\cos B = \frac{a^2+c^2-b^2}{2ac} = \frac{81+25-100}{90} = \frac{6}{90} = \frac{1}{15}
+                      > 0$ (Acute).
+
+                      $\cos C = 13/15 > 0$ (Acute).
+
+                      Triangle is acute.
+
+                      For acute triangle, $D$ and $A$ are on opposite sides of $BC$.
+
+                      The symmedian $AP$ intersects $BC$ at $L$.
+
+                      It is known that $AP$ is the symmedian chord.
+
+                      There is a formula: $AP = \frac{2bc}{b^2+c^2} m_a$? No.
+
+                      Let''s use the property: $AP \cdot AD = ?$
+
+                      Actually, there is a known identity: $AB \cdot AC = AP \cdot AD$?
+
+                      Let''s check this.
+
+                      If $AB \cdot AC = AP \cdot AD$, then $AP = \frac{bc}{AD}$.
+
+                      Let''s test this hypothesis.
+
+                      Why would $AB \cdot AC = AP \cdot AD$?
+
+                      Consider $\triangle ABP$ and $\triangle ADC$?
+
+                      $\angle BAP = \angle DAC$? No.
+
+                      $\angle ABP = \angle ACP$?
+
+                      Let''s look at similar triangles.
+
+                      It is a known property that $\triangle ABP \sim \triangle ADC$?
+
+                      Or $\triangle ABD \sim \triangle APC$?
+
+                      Angle $\angle ABD = C$. Angle $\angle APC = \angle ABC = B$? No.
+
+                      $\angle APC = \angle ABC = B$ (angles subtended by arc $AC$).
+
+                      In $\triangle ABD$ and $\triangle APC$:
+
+                      $\angle ABD = C$.
+
+                      $\angle ACP = \angle ABP$?
+
+                      Let''s check the similarity $\triangle ABD \sim \triangle CPA$?
+
+                      $\angle BAD = \angle CAP$? No.
+
+                      Actually, the correct similarity is $\triangle ABD \sim \triangle CPA$ is not standard.
+
+                      The standard similarity for symmedian is $\triangle ABP \sim \triangle ADC$?
+
+                      Let''s check angles.
+
+                      $\angle ABP = \angle ABC + \angle CBP$.
+
+                      $\angle CBP = \angle CAP$?
+
+                      This is getting complicated.
+
+
+                      Let''s look for the formula for $AP$ directly.
+
+                      $AP = \frac{2bc}{b^2+c^2} \cdot AD$?
+
+                      If $AP = \frac{2bc}{b^2+c^2} AD$, and we know $AD$.
+
+                      Let''s check the ratio $AP/AD$.
+
+                      From $DB^2 = DP \cdot DA$, $DP = DB^2/DA$.
+
+                      $AP = |DA - DP| = |AD - DB^2/AD| = \frac{|AD^2 - DB^2|}{AD}$.
+
+                      We found $AD^2 < DB^2$, so $AP = \frac{DB^2 - AD^2}{AD}$.
+
+                      The problem states $P$ is on $\overline{AD}$.
+
+                      This implies $AP = AD - DP$ is wrong?
+
+                      If $P$ is on segment $AD$, then $DP + PA = DA$.
+
+                      So $PA = DA - DP$.
+
+                      This requires $DP < DA$.
+
+                      Our calculation gave $DP > DA$.
+
+                      Is it possible that $D$ is defined differently?
+
+                      "Tangents to $\omega$ at $B$ and $C$ intersect at $D$".
+
+                      This is standard.
+
+                      Is it possible that $AP$ refers to the chord length, and the intersection $P$ is
+                      such that $A-P-D$?
+
+                      If $A-P-D$, then $P$ is between $A$ and $D$.
+
+                      Then $AP + PD = AD$.
+
+                      $PD = AD - AP$.
+
+                      $DB^2 = DP \cdot DA = (AD - AP) AD = AD^2 - AP \cdot AD$.
+
+                      $AP \cdot AD = AD^2 - DB^2$.
+
+                      This requires $AD^2 > DB^2$.
+
+                      But we found $AD^2 < DB^2$.
+
+                      So this configuration is impossible for the calculated values.
+
+
+                      Did I calculate $AD$ correctly?
+
+                      $AD^2 = 25 + (225/22)^2 - 2(5)(225/22)(13/15)$.
+
+                      Let''s re-calculate Term 3.
+
+                      $2 \cdot 5 \cdot \frac{225}{22} \cdot \frac{13}{15} = 10 \cdot \frac{225}{22} \cdot
+                      \frac{13}{15}$.
+
+                      $10/15 = 2/3$.
+
+                      $2/3 \cdot 225/22 \cdot 13 = \frac{2 \cdot 75 \cdot 13}{22} = \frac{150 \cdot 13}{22}
+                      = \frac{75 \cdot 13}{11} = \frac{975}{11}$.
+
+                      $975/11 = 88.63$.
+
+                      $DB^2 = (225/22)^2 = 50625/484 \approx 104.6$.
+
+                      $AB^2 = 25$.
+
+                      $AD^2 = 25 + 104.6 - 88.6 = 41$.
+
+                      Calculation is robust.
+
+
+                      Is it possible that $\angle ABD$ is not $C$?
+
+                      Angle between tangent $DB$ and chord $BA$.
+
+                      The tangent is at $B$. The chord is $BA$.
+
+                      The angle is equal to the angle in the alternate segment, which is $\angle BCA =
+                      C$.
+
+                      This is correct.
+
+
+                      Is it possible that $D$ and $A$ are on the *same* side of $BC$?
+
+                      No, for acute triangle, tangents at $B, C$ meet on the opposite side of $BC$ from
+                      $A$.
+
+
+                      Let''s assume the question implies the line $AD$ intersects the circle at $P$, and
+                      we want the length $AP$.
+
+                      If $P$ is not on the segment, but on the line, $AP$ is still the distance between
+                      $A$ and $P$.
+
+                      From $D, A, P$ order, $AP = DP - DA$.
+
+                      $AP = \frac{DB^2}{AD} - AD = \frac{DB^2 - AD^2}{AD}$.
+
+                      Numerator: $DB^2 - AD^2$.
+
+                      $DB^2 = \frac{50625}{484}$.
+
+                      $AD^2 = \frac{19825}{484}$.
+
+                      Diff = $\frac{30800}{484}$.
+
+                      $30800 / 484$.
+
+                      $484 \cdot 60 = 29040$.
+
+                      $30800 - 29040 = 1760$.
+
+                      $484 \cdot 3 = 1452$.
+
+                      $1760 - 1452 = 308$.
+
+                      $484 \cdot 0.63$?
+
+                      $30800 / 484 = 63.63$?
+
+                      Let''s simplify fraction.
+
+                      $30800 / 4 = 7700$.
+
+                      $484 / 4 = 121$.
+
+                      $7700 / 121 = 7700 / 11^2$.
+
+                      $7700 / 11 = 700$.
+
+                      $700 / 11$.
+
+                      So $DB^2 - AD^2 = \frac{700}{11}$.
+
+                      $AP = \frac{700/11}{AD}$.
+
+                      $AD = \sqrt{\frac{19825}{484}} = \frac{\sqrt{19825}}{22}$.
+
+                      $19825 = 25 \cdot 793$.
+
+                      $AD = \frac{5\sqrt{793}}{22}$.
+
+                      $AP = \frac{700}{11} \cdot \frac{22}{5\sqrt{793}} = \frac{700 \cdot 2}{5\sqrt{793}}
+                      = \frac{1400}{5\sqrt{793}} = \frac{280}{\sqrt{793}}$.
+
+                      This is not a rational number.
+
+                      The problem states $AP = m/n$.
+
+                      So my assumption about the geometry or formula is wrong.
+
+
+                      Re-read: "$\overline{AD}$ intersect $\omega$ at $P$".
+
+                      This implies $P$ is on the segment.
+
+                      This implies $AD > DB$.
+
+                      Where is the error?
+
+                      Maybe $\angle ABD$?
+
+                      If $D$ is the intersection of tangents, $\triangle DBC$ is isosceles.
+
+                      $\angle DBC = A$.
+
+                      $\angle ABC = B$.
+
+                      $\angle ABD = B + A$?
+
+                      If $D$ and $A$ are on opposite sides of $BC$, then $\angle ABD = B + A$?
+
+                      Let''s check the vector directions.
+
+                      Vector $BA$. Vector $BC$. Angle $B$.
+
+                      Vector $BD$. Angle between $BD$ and $BC$ is $A$.
+
+                      Are $BD$ and $BA$ on the same side of $BC$?
+
+                      No. $A$ and $D$ are on opposite sides.
+
+                      So the angle $\angle ABD = \angle ABC + \angle CBD = B + A$.
+
+                      Ah! $\angle ABD = A + B$.
+
+                      Previously I used $C$.
+
+                      Angle between tangent and chord $BA$ is $C$.
+
+                      But this angle is $\angle DBA$.
+
+                      Is $D$ on the side of $BA$ that makes the angle $C$?
+
+                      The tangent at $B$ has two directions.
+
+                      $D$ is determined by intersection with tangent at $C$.
+
+                      For acute triangle, $D$ is "outside" $BC$.
+
+                      The angle $\angle DBA$ is indeed $C$?
+
+                      Let''s draw.
+
+                      Circle. $A$ top. $B$ left, $C$ right.
+
+                      Tangent at $B$ goes down-left?
+
+                      Tangent at $C$ goes down-right?
+
+                      They meet at $D$ below $BC$.
+
+                      Angle between tangent $BD$ and chord $BC$ is $A$.
+
+                      Angle $\angle ABC = B$.
+
+                      The angle $\angle ABD = \angle ABC + \angle CBD = B + A$.
+
+                      Wait. The tangent $BD$ makes angle $A$ with $BC$.
+
+                      Does it make angle $C$ with $BA$?
+
+                      Angle between tangent and chord $AB$ is $C$.
+
+                      So $\angle (Tangent, AB) = C$.
+
+                      Is $\angle ABD = C$ or $180-C$ or $B+A$?
+
+                      In $\triangle ABD$, the angle at $B$ is $\angle ABD$.
+
+                      The tangent line is $L$. Angle between $L$ and $AB$ is $C$.
+
+                      Angle between $L$ and $BC$ is $A$.
+
+                      $\angle ABC = B$.
+
+                      $A+B+C=180$.
+
+                      So $A+B = 180-C$.
+
+                      If $BD$ is on the opposite side of $BC$ from $A$, then $\angle ABD = B + A = 180
+                      - C$.
+
+                      So $\cos(\angle ABD) = \cos(180-C) = -\cos C$.
+
+                      This changes the sign in Law of Cosines!
+
+
+                      Let''s re-calculate $AD^2$ with $\cos(180-C) = -\cos C$.
+
+                      $AD^2 = AB^2 + DB^2 - 2 AB \cdot DB \cos(180-C)$.
+
+                      $AD^2 = 25 + DB^2 + 2 AB \cdot DB \cos C$.
+
+                      Term 3 was subtracted before. Now added.
+
+                      $AD^2 = 25 + \frac{50625}{484} + \frac{42900}{484}$.
+
+                      $AD^2 = \frac{12100 + 50625 + 42900}{484} = \frac{105625}{484}$.
+
+                      $\sqrt{105625}$.
+
+                      $105625 / 25 = 4225$.
+
+                      $\sqrt{4225} = 65$.
+
+                      So $\sqrt{105625} = 5 \cdot 65 = 325$.
+
+                      $AD = \frac{325}{22}$.
+
+                      Now $AD^2 = \frac{105625}{484}$.
+
+                      $DB^2 = \frac{50625}{484}$.
+
+                      $AD^2 > DB^2$.
+
+                      So $DP = DB^2/AD < AD$.
+
+                      So $P$ lies on segment $AD$.
+
+                      Order $D - P - A$.
+
+                      $AP = AD - DP = AD - \frac{DB^2}{AD} = \frac{AD^2 - DB^2}{AD}$.
+
+                      Numerator: $AD^2 - DB^2 = \frac{105625 - 50625}{484} = \frac{55000}{484}$.
+
+                      $AP = \frac{55000/484}{325/22} = \frac{55000}{484} \cdot \frac{22}{325}$.
+
+                      $484 / 22 = 22$.
+
+                      $AP = \frac{55000}{22 \cdot 325} = \frac{55000}{7150}$.
+
+                      Divide by 10: $5500 / 715$.
+
+                      Divide by 5: $1100 / 143$.
+
+                      Divide by 11: $100 / 13$.
+
+                      $m = 100, n = 13$.
+
+                      Relatively prime? Yes.
+
+                      $m+n = 113$.'
+                    proposals:
+                    - title: Final Answer is 113.
+                - title: Calculate $AP$ directly.
+                  prob: 0.003172404755100392
+                  logprob: -5.753265380859375
+            - title: Check if there's a simpler formula for $AP$.
+              prob: 0.020329362475869674
+              logprob: -3.895689010620117
+        - title: Proceed to calculate $AD^2$.
+          prob: 0.014059207921311661
+          logprob: -4.264477729797363
+    - title: Calculate $DB$ using the formula $DB = \frac{a}{2 \cos A}$.
+      prob: 0.0019122025192242062
+      logprob: -6.259499549865723
+    - title: Calculate $AD^2$ using Law of Cosines in $\triangle ABD$ with angle $C$.
+      prob: 0.005889998418257905
+      logprob: -5.134499549865723
+    - title: Calculate $AP$ using $AP = \frac{AD^2 - DB^2}{AD}$.
+      prob: 0.0014892248193629249
+      logprob: -6.509499549865723

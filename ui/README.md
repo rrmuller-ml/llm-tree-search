@@ -9,13 +9,15 @@ The page loads `../example.yaml` by default, which needs an HTTP server
 (browsers block `fetch` from `file://`). From the repo root:
 
 ```bash
-python3 -m http.server 8000
+python3 serve.py
 ```
 
 Then open <http://localhost:8000/ui/>.
 
 - **Another file:** add `?file=` with a path relative to `ui/`, e.g.
-  `http://localhost:8000/ui/?file=../other.yaml`. JSON works too.
+  `http://localhost:8000/ui/?file=../runs/17x23.yaml` or an AIME tree,
+  `http://localhost:8000/ui/?file=../runs/aime_eval/trees/aime2024_60.yaml`.
+  JSON works too.
 - **Without a server:** open `index.html` directly and use the
   **Open YAML / JSON…** button.
 

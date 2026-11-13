@@ -1,0 +1,260 @@
+proposals:
+- title: 'Let \(b\ge 2\) be an integer. Call a positive integer \(n\) \(b\text-\textit{eautiful}\) if
+    it has exactly two digits when expressed in base \(b\)  and these two digits sum to \(\sqrt n\). For
+    example, \(81\) is \(13\text-\textit{eautiful}\) because \(81  = \underline{6} \ \underline{3}_{13}
+    \) and \(6 + 3 =  \sqrt{81}\). Find the least integer \(b\ge 2\) for which there are more than ten
+    \(b\text-\textit{eautiful}\) integers.
+
+
+    (The answer is an integer from 0 to 999, written between <answer> and </answer>.)'
+  prob: 0.9983530979355898
+  logprob: -0.0016482596984133124
+  node:
+    thought: "Let's analyze the definition of a \\(b\\)-eautiful integer.\n  \\( n \\) has exactly two\
+      \ digits in base \\( b \\). Let these digits be \\( d_1 \\) and \\( d_0 \\).\n  So, \\( n = d_1\
+      \ b + d_0 \\), where \\( d_1 \\in \\{1, 2, \\dots, b-1\\} \\) and \\( d_0 \\in \\{0, 1, \\dots,\
+      \ b-1\\} \\).\n  The condition is that the sum of the digits equals the square root of \\( n \\\
+      ).\n  Let \\( k = \\sqrt{n} \\). Then \\( k \\) is an integer, so \\( n = k^2 \\).\n  The condition\
+      \ becomes \\( d_1 + d_0 = k \\).\n  Substituting \\( n = k^2 \\) into the base expression: \\( k^2\
+      \ = d_1 b + d_0 \\).\n  Also, \\( d_0 = k - d_1 \\).\n  So, \\( k^2 = d_1 b + (k - d_1) = d_1(b\
+      \ - 1) + k \\).\n  Rearranging gives \\( k^2 - k = d_1(b - 1) \\), or \\( k(k - 1) = d_1(b - 1)\
+      \ \\).\n  We need to find the number of such integers \\( n \\) (which correspond to unique pairs\
+      \ \\( (d_1, d_0) \\) or unique \\( k \\)) for a given \\( b \\).\n  The constraints on digits are:\n\
+      \  1. \\( 1 \\le d_1 \\le b-1 \\)\n  2. \\( 0 \\le d_0 \\le b-1 \\)\n  Since \\( d_0 = k - d_1 \\\
+      ), condition 2 becomes \\( 0 \\le k - d_1 \\le b-1 \\), which means \\( d_1 \\le k \\le d_1 + b\
+      \ - 1 \\).\n  Also, since \\( n \\) has exactly two digits, \\( b \\le n < b^2 \\), so \\( b \\\
+      le k^2 < b^2 \\), which implies \\( \\sqrt{b} \\le k < b \\).\n  Let's express \\( d_1 \\) in terms\
+      \ of \\( k \\) and \\( b \\):\n  \\( d_1 = \\frac{k(k-1)}{b-1} \\).\n  For a valid \\( b \\)-eautiful\
+      \ integer, \\( d_1 \\) must be an integer.\n  So, \\( b-1 \\) must divide \\( k(k-1) \\).\n  Additionally,\
+      \ we need to check if the resulting \\( d_1 \\) and \\( d_0 \\) satisfy the digit constraints.\n\
+      \  Since \\( d_1 = \\frac{k(k-1)}{b-1} \\), and \\( k < b \\), let's estimate the size of \\( d_1\
+      \ \\).\n  \\( k \\approx b \\), so \\( k(k-1) \\approx b^2 \\). Then \\( d_1 \\approx \\frac{b^2}{b}\
+      \ = b \\).\n  Specifically, \\( d_1 = \\frac{k^2-k}{b-1} \\).\n  We know \\( k < b \\), so \\( k\
+      \ \\le b-1 \\).\n  Then \\( k(k-1) \\le (b-1)(b-2) = b^2 - 3b + 2 \\).\n  \\( d_1 \\le \\frac{b^2\
+      \ - 3b + 2}{b-1} = b - 2 + \\frac{2}{b-1} \\).\n  For \\( b > 3 \\), \\( d_1 \\le b-2 < b-1 \\),\
+      \ so \\( d_1 \\) is always a valid leading digit (non-zero, less than \\( b \\)) provided it's a\
+      \ positive integer.\n  What about \\( d_0 \\)?\n  \\( d_0 = k - d_1 \\).\n  We need \\( d_0 \\ge\
+      \ 0 \\implies k \\ge d_1 \\).\n  \\( k \\ge \\frac{k(k-1)}{b-1} \\iff 1 \\ge \\frac{k-1}{b-1} \\\
+      iff b-1 \\ge k-1 \\iff b \\ge k \\).\n  This is always true since \\( k < b \\).\n  We need \\(\
+      \ d_0 \\le b-1 \\).\n  \\( k - d_1 \\le b-1 \\iff k - (b-1) \\le d_1 \\).\n  \\( d_1 = \\frac{k(k-1)}{b-1}\
+      \ \\).\n  Is \\( \\frac{k(k-1)}{b-1} \\ge k - (b-1) \\)?\n  \\( k(k-1) \\ge (k - b + 1)(b-1) \\\
+      )\n  \\( k^2 - k \\ge kb - k - b^2 + b + b - 1 \\)\n  \\( k^2 - k \\ge kb - k - b^2 + 2b - 1 \\\
+      )\n  \\( k^2 \\ge kb - b^2 + 2b - 1 \\)\n  \\( k^2 - kb + b^2 - 2b + 1 \\ge 0 \\).\n  This quadratic\
+      \ in \\( k \\) has discriminant \\( b^2 - 4(b^2 - 2b + 1) = b^2 - 4b^2 + 8b - 4 = -3b^2 + 8b - 4\
+      \ \\).\n  For large \\( b \\), this is negative, meaning the quadratic is always positive.\n  So\
+      \ the condition \\( d_0 \\le b-1 \\) is generally satisfied for valid ranges.\n  The main constraint\
+      \ is that \\( d_1 \\) is an integer, i.e., \\( b-1 \\mid k(k-1) \\).\n  Also \\( k \\) must be an\
+      \ integer such that \\( \\lceil \\sqrt{b} \\rceil \\le k \\le b-1 \\).\n  Let \\( m = b-1 \\). Then\
+      \ \\( n \\) is \\( b \\)-eautiful if there exists an integer \\( k \\) with \\( \\sqrt{b} \\le k\
+      \ \\le m \\) such that \\( m \\mid k(k-1) \\).\n  Each such \\( k \\) yields a unique \\( d_1 =\
+      \ k(k-1)/m \\) and \\( d_0 = k - d_1 \\), and thus a unique \\( n = k^2 \\).\n  So the number of\
+      \ \\( b \\)-eautiful integers is the count of integers \\( k \\in [\\lceil \\sqrt{b} \\rceil, b-1]\
+      \ \\) such that \\( b-1 \\mid k(k-1) \\).\n  We want the least \\( b \\) such that this count is\
+      \ \\( > 10 \\).\n  Let \\( m = b-1 \\). We want the number of \\( k \\in [\\lceil \\sqrt{m+1} \\\
+      rceil, m] \\) such that \\( m \\mid k(k-1) \\) to be at least 11."
+    proposals:
+    - title: Count solutions for small \(b\) to verify formula
+      prob: 0.16276288978454406
+      logprob: -1.8154608011245728
+    - title: Analyze the divisor condition \( m \mid k(k-1) \)
+      prob: 0.8265781826622209
+      logprob: -0.19046077132225037
+      node:
+        thought: "The condition \\( m \\mid k(k-1) \\) means that \\( k(k-1) \\) is a multiple of \\(\
+          \ m \\).\n  Since \\( \\gcd(k, k-1) = 1 \\), the prime factors of \\( m \\) must be distributed\
+          \ between \\( k \\) and \\( k-1 \\).\n  Let \\( m = p_1^{e_1} \\cdots p_r^{e_r} \\).\n  For\
+          \ each prime power \\( p_i^{e_i} \\), either \\( p_i^{e_i} \\mid k \\) or \\( p_i^{e_i} \\mid\
+          \ k-1 \\).\n  This structure suggests using the Chinese Remainder Theorem.\n  Let \\( m = uv\
+          \ \\) with \\( \\gcd(u, v) = 1 \\).\n  The solutions for \\( k \\pmod m \\) are determined by\
+          \ choosing \\( k \\equiv 0 \\pmod u \\) and \\( k \\equiv 1 \\pmod v \\) or vice versa?\n  Actually,\
+          \ the general solution to \\( k(k-1) \\equiv 0 \\pmod m \\) corresponds to splitting the factors\
+          \ of \\( m \\) into two coprime parts \\( A \\) and \\( B \\) such that \\( AB=m \\), \\( \\\
+          gcd(A,B)=1 \\), and \\( k \\equiv 0 \\pmod A \\), \\( k \\equiv 1 \\pmod B \\).\n  Note: \\\
+          ( k=0 \\) and \\( k=1 \\) are always solutions modulo \\( m \\).\n  \\( k=0 \\implies k(k-1)=0\
+          \ \\). \\( k=1 \\implies k(k-1)=0 \\).\n  However, our range for \\( k \\) is \\( \\lceil \\\
+          sqrt{m+1} \\rceil \\le k \\le m \\).\n  \\( k=1 \\) is only in range if \\( \\lceil \\sqrt{m+1}\
+          \ \\rceil = 1 \\implies m+1 \\le 1 \\implies m=0 \\), impossible.\n  \\( k=m \\) is always in\
+          \ range. \\( m(m-1) \\) is divisible by \\( m \\). So \\( k=m \\) is always a solution.\n  The\
+          \ number of solutions to \\( k(k-1) \\equiv 0 \\pmod m \\) in the range \\( 0 \\le k < m \\\
+          ) is \\( 2^r \\), where \\( r \\) is the number of distinct prime factors of \\( m \\).\n  Since\
+          \ \\( k \\) can be \\( m \\) (which is \\( 0 \\pmod m \\)), the solutions in \\( 1 \\le k \\\
+          le m \\) are the same count as \\( 0 \\le k < m \\) except \\( k=0 \\) is replaced by \\( k=m\
+          \ \\).\n  So there are exactly \\( 2^r \\) solutions in \\( 1 \\le k \\le m \\).\n  One of these\
+          \ is \\( k=1 \\) (if \\( m > 1 \\)), which is likely excluded by the lower bound.\n  The other\
+          \ is \\( k=m \\).\n  We need the number of solutions in \\( [\\lceil \\sqrt{m+1} \\rceil, m]\
+          \ \\) to be \\( \\ge 11 \\).\n  Total solutions in \\( [1, m] \\) is \\( 2^r \\).\n  We must\
+          \ subtract solutions \\( k < \\lceil \\sqrt{m+1} \\rceil \\).\n  The smallest positive solution\
+          \ is always \\( k=1 \\).\n  Are there other small solutions?\n  If \\( m \\) has many prime\
+          \ factors, the solutions are somewhat uniformly distributed? Not exactly, but they are related\
+          \ to divisors.\n  Let's test small values of \\( r \\).\n  If \\( r=1 \\), \\( m = p^e \\).\
+          \ Solutions are \\( 1, m \\). Count = 2.\n  Range \\( [\\lceil \\sqrt{m+1} \\rceil, m] \\).\n\
+          \  For \\( m \\ge 2 \\), \\( \\sqrt{m+1} > 1 \\). So \\( k=1 \\) is excluded.\n  Only \\( k=m\
+          \ \\) remains. Count = 1.\n  If \\( r=2 \\), \\( m = p^e q^f \\). Solutions: \\( 1, a, b, m\
+          \ \\) where \\( a \\equiv 0 \\pmod {p^e}, a \\equiv 1 \\pmod {q^f} \\) and \\( b \\equiv 1 \\\
+          pmod {p^e}, b \\equiv 0 \\pmod {q^f} \\).\n  Total 4 solutions.\n  \\( k=1 \\) is excluded.\n\
+          \  We need at least 11 solutions. \\( 2^r \\ge 11 + \\text{excluded} \\).\n  If lower bound\
+          \ is small, excluded count is small.\n  For \\( r=4 \\), \\( 2^4 = 16 \\). If we exclude 1 or\
+          \ 2, we might get 14 or 15.\n  For \\( r=3 \\), \\( 2^3 = 8 \\). Max possible is 8 (if \\( k=1\
+          \ \\) excluded, 7 left). Not enough.\n  So we need \\( r \\ge 4 \\).\n  Let's check \\( r=4\
+          \ \\). \\( m \\) has 4 distinct prime factors.\n  \\( m = p_1 p_2 p_3 p_4 \\) (taking smallest\
+          \ exponents to minimize \\( m \\)).\n  Smallest primes: 2, 3, 5, 7.\n  \\( m = 2 \\cdot 3 \\\
+          cdot 5 \\cdot 7 = 210 \\).\n  \\( b = 211 \\).\n  Number of solutions in \\( [1, 210] \\) is\
+          \ 16.\n  Lower bound \\( \\lceil \\sqrt{211} \\rceil = \\lceil 14.5 \\rceil = 15 \\).\n  We\
+          \ need to count how many solutions are \\( \\ge 15 \\).\n  Total 16. Solutions are symmetric?\n\
+          \  If \\( k \\) is a solution, is \\( m-k+1 \\) a solution?\n  \\( (m-k+1)(m-k) \\equiv (-k+1)(-k)\
+          \ = k(k-1) \\equiv 0 \\pmod m \\).\n  Yes. The solutions come in pairs \\( (k, m-k+1) \\).\n\
+          \  Also \\( k=1 \\) pairs with \\( m \\). \\( k=m \\) pairs with \\( 1 \\).\n  For \\( m=210\
+          \ \\), pairs sum to 211.\n  Solutions: \\( 1, k_2, k_3, k_4, k_5, k_6, k_7, k_8, 105, \\dots\
+          \ \\) wait.\n  Let's list them for \\( m=210 \\).\n  Factors: \\( 2, 3, 5, 7 \\).\n  We need\
+          \ to solve \\( k(k-1) \\equiv 0 \\pmod {210} \\).\n  This splits into:\n  \\( k \\equiv 0 \\\
+          ) or \\( 1 \\pmod 2 \\)\n  \\( k \\equiv 0 \\) or \\( 1 \\pmod 3 \\)\n  \\( k \\equiv 0 \\)\
+          \ or \\( 1 \\pmod 5 \\)\n  \\( k \\equiv 0 \\) or \\( 1 \\pmod 7 \\)\n  \n  Let's find the 16\
+          \ solutions.\n  Let \\( S \\) be the set of solutions.\n  \\( 1 \\in S \\). \\( 210 \\in S \\\
+          ).\n  \\( k=210 \\) is \\( \\ge 15 \\). Count = 1.\n  \\( k=1 \\) is \\( < 15 \\). Exclude.\n\
+          \  We need to check the other 14 solutions.\n  Due to symmetry \\( k \\leftrightarrow 211-k\
+          \ \\), if \\( k < 105.5 \\), then \\( 211-k > 105.5 \\).\n  Since \\( 15 \\le 105.5 \\), most\
+          \ small solutions will have large partners.\n  Specifically, if \\( k < 15 \\), its partner\
+          \ \\( 211-k > 196 \\), which is \\( \\ge 15 \\).\n  So we just need to count how many solutions\
+          \ are \\( < 15 \\) and subtract from 16.\n  Possible small solutions:\n  1. \\( k=1 \\). (Exclude)\n\
+          \  2. Solve CRT for combinations.\n     Let's find the smallest non-trivial solution.\n    \
+          \ Try \\( k \\equiv 0 \\pmod 2, k \\equiv 1 \\pmod 3, k \\equiv 1 \\pmod 5, k \\equiv 1 \\pmod\
+          \ 7 \\).\n     \\( k \\equiv 1 \\pmod {105} \\). \\( k=1, 106, \\dots \\).\n     \\( k=1 \\\
+          ) is the one. Next is 106.\n     \n     Try \\( k \\equiv 0 \\pmod 3, k \\equiv 1 \\pmod 2,\
+          \ k \\equiv 1 \\pmod 5, k \\equiv 1 \\pmod 7 \\).\n     \\( k \\equiv 1 \\pmod {70} \\). \\\
+          ( k \\) must be odd. \\( 1, 71, \\dots \\).\n     \\( k=1 \\). Next 71.\n     \n     Try \\\
+          ( k \\equiv 0 \\pmod 5, k \\equiv 1 \\pmod 2, k \\equiv 1 \\pmod 3, k \\equiv 1 \\pmod 7 \\\
+          ).\n     \\( k \\equiv 1 \\pmod {42} \\). \\( k \\) odd? \\( 1 \\equiv 1 \\pmod 2 \\). Yes.\n\
+          \     \\( k=1, 43, 85, \\dots \\).\n     \n     Try \\( k \\equiv 0 \\pmod 7, k \\equiv 1 \\\
+          pmod 2, k \\equiv 1 \\pmod 3, k \\equiv 1 \\pmod 5 \\).\n     \\( k \\equiv 1 \\pmod {30} \\\
+          ). \\( k \\) odd? \\( 1 \\equiv 1 \\pmod 2 \\). Yes.\n     \\( k=1, 31, 61, 91, \\dots \\).\n\
+          \     \n     Try mixed zeros.\n     \\( k \\equiv 0 \\pmod 2, k \\equiv 0 \\pmod 3 \\implies\
+          \ k \\equiv 0 \\pmod 6 \\).\n     \\( k \\equiv 1 \\pmod 5, k \\equiv 1 \\pmod 7 \\implies k\
+          \ \\equiv 1 \\pmod {35} \\).\n     \\( k = 35j + 1 \\). \\( 35j + 1 \\equiv 0 \\pmod 6 \\).\n\
+          \     \\( 35 \\equiv 5 \\equiv -1 \\pmod 6 \\).\n     \\( -j + 1 \\equiv 0 \\implies j=1 \\\
+          ).\n     \\( k = 36 \\).\n     Check: \\( 36(35) = 1260 = 6 \\cdot 210 \\). Divisible.\n   \
+          \  \\( k=36 \\ge 15 \\).\n     \n     \\( k \\equiv 0 \\pmod 2, k \\equiv 0 \\pmod 5 \\implies\
+          \ k \\equiv 0 \\pmod {10} \\).\n     \\( k \\equiv 1 \\pmod 3, k \\equiv 1 \\pmod 7 \\implies\
+          \ k \\equiv 1 \\pmod {21} \\).\n     \\( k = 21j + 1 \\). \\( 21j + 1 \\equiv 0 \\pmod {10}\
+          \ \\).\n     \\( j + 1 \\equiv 0 \\implies j=9 \\).\n     \\( k = 21(9) + 1 = 190 \\).\n   \
+          \  \\( 190 \\ge 15 \\).\n     \n     \\( k \\equiv 0 \\pmod 2, k \\equiv 0 \\pmod 7 \\implies\
+          \ k \\equiv 0 \\pmod {14} \\).\n     \\( k \\equiv 1 \\pmod 3, k \\equiv 1 \\pmod 5 \\implies\
+          \ k \\equiv 1 \\pmod {15} \\).\n     \\( k = 15j + 1 \\). \\( 15j + 1 \\equiv 0 \\pmod {14}\
+          \ \\).\n     \\( j + 1 \\equiv 0 \\implies j=13 \\).\n     \\( k = 15(13) + 1 = 196 \\).\n \
+          \    \n     \\( k \\equiv 0 \\pmod 3, k \\equiv 0 \\pmod 5 \\implies k \\equiv 0 \\pmod {15}\
+          \ \\).\n     \\( k \\equiv 1 \\pmod 2, k \\equiv 1 \\pmod 7 \\implies k \\equiv 1 \\pmod {14}\
+          \ \\).\n     \\( k = 14j + 1 \\). \\( 14j + 1 \\equiv 0 \\pmod {15} \\).\n     \\( -j + 1 \\\
+          equiv 0 \\implies j=1 \\).\n     \\( k = 15 \\).\n     \\( 15 \\ge 15 \\). Include.\n     \n\
+          \     \\( k \\equiv 0 \\pmod 3, k \\equiv 0 \\pmod 7 \\implies k \\equiv 0 \\pmod {21} \\).\n\
+          \     \\( k \\equiv 1 \\pmod 2, k \\equiv 1 \\pmod 5 \\implies k \\equiv 1 \\pmod {10} \\).\n\
+          \     \\( k = 10j + 1 \\). \\( 10j + 1 \\equiv 0 \\pmod {21} \\).\n     \\( 10j \\equiv -1 \\\
+          equiv 20 \\pmod {21} \\).\n     \\( j=2 \\).\n     \\( k = 21 \\).\n     \\( 21 \\ge 15 \\).\
+          \ Include.\n     \n     \\( k \\equiv 0 \\pmod 5, k \\equiv 0 \\pmod 7 \\implies k \\equiv 0\
+          \ \\pmod {35} \\).\n     \\( k \\equiv 1 \\pmod 2, k \\equiv 1 \\pmod 3 \\implies k \\equiv\
+          \ 1 \\pmod 6 \\).\n     \\( k = 6j + 1 \\). \\( 6j + 1 \\equiv 0 \\pmod {35} \\).\n     \\(\
+          \ 6j \\equiv -1 \\equiv 34 \\pmod {35} \\).\n     Inverse of 6 mod 35? \\( 6 \\cdot 6 = 36 \\\
+          equiv 1 \\). So \\( j \\equiv 34 \\cdot 6 = 204 = 5 \\cdot 35 + 29 \\equiv 29 \\).\n     \\\
+          ( j=29 \\).\n     \\( k = 6(29) + 1 = 175 \\).\n     \n     Let's collect all 16 solutions for\
+          \ \\( m=210 \\):\n     1. \\( 1 \\)\n     2. \\( 210 \\)\n     3. \\( 36 \\)\n     4. \\( 190\
+          \ \\) (partner of 21? \\( 211-21=190 \\). Yes.)\n     5. \\( 196 \\) (partner of 15? \\( 211-15=196\
+          \ \\). Yes.)\n     6. \\( 15 \\)\n     7. \\( 21 \\)\n     8. \\( 175 \\) (partner of 36? \\\
+          ( 211-36=175 \\). Yes.)\n     9. \\( 106 \\) (partner of 105? Wait. \\( k=105 \\)?\n       \
+          \ \\( 105(104) = 105 \\cdot 104 \\). \\( 105 = 5 \\cdot 7 \\cdot 3 \\). \\( 104 = 8 \\cdot 13\
+          \ \\).\n        \\( 210 = 2 \\cdot 3 \\cdot 5 \\cdot 7 \\).\n        \\( 105 \\) is divisible\
+          \ by 3,5,7. Not 2.\n        \\( 104 \\) is divisible by 2.\n        So \\( 105 \\cdot 104 \\\
+          ) is divisible by \\( 2 \\cdot 3 \\cdot 5 \\cdot 7 = 210 \\).\n        So \\( k=105 \\) is a\
+          \ solution.\n        Partner \\( 211-105 = 106 \\).\n     10. \\( 105 \\)\n     11. \\( 106\
+          \ \\)\n     12. \\( 43 \\) (from \\( k \\equiv 1 \\pmod {42} \\). \\( 1, 43, 85, 127, 169, \\\
+          dots \\)?\n        Wait, I only listed specific ones. Let's list all 16 systematically.\n  \
+          \      The solutions are \\( k \\) such that for each prime factor \\( p \\in \\{2,3,5,7\\}\
+          \ \\), \\( k \\equiv 0 \\) or \\( 1 \\pmod p \\).\n        \n        Let's list them by their\
+          \ \"type\" (which primes divide k):\n        Type 0000 (all 1): \\( k=1 \\).\n        Type 1000\
+          \ (\\( 2|k \\)): \\( k \\equiv 0 \\pmod 2, 1 \\pmod 3, 1 \\pmod 5, 1 \\pmod 7 \\implies k \\\
+          equiv 1 \\pmod {105} \\).\n           \\( k=1, 106, 211(\\equiv 1) \\). In range: \\( 1, 106\
+          \ \\).\n        Type 0100 (\\( 3|k \\)): \\( k \\equiv 1 \\pmod 2, 0 \\pmod 3, 1 \\pmod 5, 1\
+          \ \\pmod 7 \\implies k \\equiv 1 \\pmod {70} \\).\n           \\( k \\) odd. \\( 1, 71, 141,\
+          \ 211 \\). In range: \\( 1, 71, 141 \\).\n           Wait, \\( 1 \\) is already counted? No,\
+          \ \\( 1 \\) is type 0000.\n           Is 71 a solution? \\( 71(70) \\). \\( 70 = 2 \\cdot 5\
+          \ \\cdot 7 \\). \\( 71 \\) is prime.\n           \\( 210 = 2 \\cdot 3 \\cdot 5 \\cdot 7 \\).\n\
+          \           \\( 71 \\cdot 70 \\) is divisible by \\( 2,5,7 \\). Is it divisible by 3?\n    \
+          \       \\( 71 \\equiv 2 \\pmod 3 \\). \\( 70 \\equiv 1 \\pmod 3 \\). Product \\( 2 \\not\\\
+          equiv 0 \\).\n           So 71 is NOT a solution.\n           My CRT calculation was: \\( k\
+          \ \\equiv 1 \\pmod 2, 0 \\pmod 3, 1 \\pmod 5, 1 \\pmod 7 \\).\n           \\( k \\equiv 1 \\\
+          pmod {2 \\cdot 5 \\cdot 7 = 70} \\).\n           \\( k \\equiv 0 \\pmod 3 \\).\n           \\\
+          ( 70j + 1 \\equiv 0 \\pmod 3 \\implies j + 1 \\equiv 0 \\implies j=2, 5, \\dots \\).\n     \
+          \      \\( j=2 \\implies k = 141 \\).\n           \\( 141 = 3 \\cdot 47 \\). Divisible by 3.\n\
+          \           \\( 141-1 = 140 = 2^2 \\cdot 5 \\cdot 7 \\). Divisible by 2,5,7.\n           So\
+          \ \\( k=141 \\) is a solution.\n           Partner \\( 211-141 = 70 \\).\n           Check 70:\
+          \ \\( 70(69) \\). \\( 70 = 2 \\cdot 5 \\cdot 7 \\). \\( 69 = 3 \\cdot 23 \\).\n           Divisible\
+          \ by \\( 2,3,5,7 \\). Yes.\n           So solutions from this type: \\( 70, 141 \\).\n     \
+          \      \n        Type 0010 (\\( 5|k \\)): \\( k \\equiv 1 \\pmod 2, 1 \\pmod 3, 0 \\pmod 5,\
+          \ 1 \\pmod 7 \\implies k \\equiv 1 \\pmod {42} \\).\n           \\( k \\equiv 0 \\pmod 5 \\\
+          ).\n           \\( 42j + 1 \\equiv 0 \\pmod 5 \\implies 2j + 1 \\equiv 0 \\implies 2j \\equiv\
+          \ 4 \\implies j=2, 7, \\dots \\).\n           \\( j=2 \\implies k = 85 \\).\n           Partner\
+          \ \\( 211-85 = 126 \\).\n           Solutions: \\( 85, 126 \\).\n           \n        Type 0001\
+          \ (\\( 7|k \\)): \\( k \\equiv 1 \\pmod 2, 1 \\pmod 3, 1 \\pmod 5, 0 \\pmod 7 \\implies k \\\
+          equiv 1 \\pmod {30} \\).\n           \\( k \\equiv 0 \\pmod 7 \\).\n           \\( 30j + 1 \\\
+          equiv 0 \\pmod 7 \\implies 2j + 1 \\equiv 0 \\implies 2j \\equiv 6 \\implies j=3, 10, \\dots\
+          \ \\).\n           \\( j=3 \\implies k = 91 \\).\n           Partner \\( 211-91 = 120 \\).\n\
+          \           Solutions: \\( 91, 120 \\).\n           \n        Type 1100 (\\( 2,3|k \\)): \\\
+          ( k \\equiv 0 \\pmod 6, 1 \\pmod 5, 1 \\pmod 7 \\implies k \\equiv 0 \\pmod 6, 1 \\pmod {35}\
+          \ \\).\n           \\( k = 35j + 1 \\). \\( 35j + 1 \\equiv 0 \\pmod 6 \\implies -j + 1 \\equiv\
+          \ 0 \\implies j=1, 7, \\dots \\).\n           \\( j=1 \\implies k = 36 \\).\n           Partner\
+          \ \\( 211-36 = 175 \\).\n           Solutions: \\( 36, 175 \\).\n           \n        Type 1010\
+          \ (\\( 2,5|k \\)): \\( k \\equiv 0 \\pmod {10}, 1 \\pmod 3, 1 \\pmod 7 \\implies k \\equiv 0\
+          \ \\pmod {10}, 1 \\pmod {21} \\).\n           \\( k = 21j + 1 \\). \\( 21j + 1 \\equiv 0 \\\
+          pmod {10} \\implies j + 1 \\equiv 0 \\implies j=9, \\dots \\).\n           \\( j=9 \\implies\
+          \ k = 190 \\).\n           Partner \\( 211-190 = 21 \\).\n           Solutions: \\( 21, 190\
+          \ \\).\n           \n        Type 1001 (\\( 2,7|k \\)): \\( k \\equiv 0 \\pmod {14}, 1 \\pmod\
+          \ 3, 1 \\pmod 5 \\implies k \\equiv 0 \\pmod {14}, 1 \\pmod {15} \\).\n           \\( k = 15j\
+          \ + 1 \\). \\( 15j + 1 \\equiv 0 \\pmod {14} \\implies j + 1 \\equiv 0 \\implies j=13, \\dots\
+          \ \\).\n           \\( j=13 \\implies k = 196 \\).\n           Partner \\( 211-196 = 15 \\).\n\
+          \           Solutions: \\( 15, 196 \\).\n           \n        Type 0110 (\\( 3,5|k \\)): \\\
+          ( k \\equiv 0 \\pmod {15}, 1 \\pmod 2, 1 \\pmod 7 \\implies k \\equiv 0 \\pmod {15}, 1 \\pmod\
+          \ {14} \\).\n           \\( k = 14j + 1 \\). \\( 14j + 1 \\equiv 0 \\pmod {15} \\implies -j\
+          \ + 1 \\equiv 0 \\implies j=1, \\dots \\).\n           \\( j=1 \\implies k = 15 \\).\n     \
+          \      Wait, 15 is already in Type 1001?\n           Let's check 15.\n           \\( 15 = 3\
+          \ \\cdot 5 \\). Not div by 2 or 7.\n           So 15 is Type 0110.\n           Partner \\( 211-15\
+          \ = 196 \\).\n           So 196 is Type 1001.\n           Solutions: \\( 15, 196 \\).\n    \
+          \       \n        Type 0101 (\\( 3,7|k \\)): \\( k \\equiv 0 \\pmod {21}, 1 \\pmod 2, 1 \\pmod\
+          \ 5 \\implies k \\equiv 0 \\pmod {21}, 1 \\pmod {10} \\).\n           \\( k = 10j + 1 \\). \\\
+          ( 10j + 1 \\equiv 0 \\pmod {21} \\implies 10j \\equiv 20 \\implies j=2, \\dots \\).\n      \
+          \     \\( j=2 \\implies k = 21 \\).\n           Partner \\( 211-21 = 190 \\).\n           So\
+          \ 21 is Type 0101.\n           Solutions: \\( 21, 190 \\).\n           \n        Type 0011 (\\\
+          ( 5,7|k \\)): \\( k \\equiv 0 \\pmod {35}, 1 \\pmod 2, 1 \\pmod 3 \\implies k \\equiv 0 \\pmod\
+          \ {35}, 1 \\pmod 6 \\).\n           \\( k = 6j + 1 \\). \\( 6j + 1 \\equiv 0 \\pmod {35} \\\
+          implies 6j \\equiv 34 \\implies j=29, \\dots \\).\n           \\( j=29 \\implies k = 175 \\\
+          ).\n           Partner \\( 211-175 = 36 \\).\n           So 175 is Type 0011.\n           Solutions:\
+          \ \\( 36, 175 \\).\n           \n        Type 1110 (\\( 2,3,5|k \\)): \\( k \\equiv 0 \\pmod\
+          \ {30}, 1 \\pmod 7 \\).\n           \\( k = 30j + 1 \\). \\( 30j + 1 \\equiv 0 \\pmod 7 \\implies\
+          \ 2j + 1 \\equiv 0 \\implies j=3, \\dots \\).\n           \\( j=3 \\implies k = 91 \\).\n  \
+          \         Partner \\( 211-91 = 120 \\).\n           So 91 is Type 1110.\n           Solutions:\
+          \ \\( 91, 120 \\).\n           \n        Type 1101 (\\( 2,3,7|k \\)): \\( k \\equiv 0 \\pmod\
+          \ {42}, 1 \\pmod 5 \\).\n           \\( k = 42j + 1 \\). \\( 42j + 1 \\equiv 0 \\pmod 5 \\implies\
+          \ 2j + 1 \\equiv 0 \\implies j=2, \\dots \\).\n           \\( j=2 \\implies k = 85 \\).\n  \
+          \         Partner \\( 211-85 = 126 \\).\n           So 85 is Type 1101.\n           Solutions:\
+          \ \\( 85, 126 \\).\n           \n        Type 1011 (\\( 2,5,7|k \\)): \\( k \\equiv 0 \\pmod\
+          \ {70}, 1 \\pmod 3 \\).\n           \\( k = 70j + 1 \\). \\( 70j + 1 \\equiv 0 \\pmod 3 \\implies\
+          \ j + 1 \\equiv 0 \\implies j=2, \\dots \\).\n           \\( j=2 \\implies k = 141 \\).\n  \
+          \         Partner \\( 211-141 = 70 \\).\n           So 141 is Type 1011.\n           Solutions:\
+          \ \\( 70, 141 \\).\n           \n        Type 0111 (\\( 3,5,7|k \\)): \\( k \\equiv 0 \\pmod\
+          \ {105}, 1 \\pmod 2 \\).\n           \\( k = 105j + 1 \\). \\( 105j + 1 \\) is odd if \\( j\
+          \ \\) is even?\n           \\( 105 \\) is odd. \\( 105j \\) is odd if \\( j \\) is odd.\n  \
+          \         We need \\( k \\) odd? No, \\( k \\equiv 1 \\pmod 2 \\) means \\( k \\) is odd.\n\
+          \           \\( 105j \\) is odd if \\( j \\) is odd. \\( 105j+1 \\) is even.\n           Wait.\
+          \ \\( k \\equiv 1 \\pmod 2 \\).\n           If \\( j=1 \\), \\( k=106 \\) (even).\n        \
+          \   If \\( j=0 \\), \\( k=1 \\) (odd).\n           So \\( k=1 \\) is the only solution here?\n\
+          \           But \\( k=1 \\) is Type 0000.\n           Ah, \\( 0111 \\) means \\( 3|k, 5|k, 7|k\
+          \ \\) and \\( 2 \\nmid k \\).\n           \\( k=105 \\). \\( 105 \\) is odd.\n           \\\
+          ( 105(104) \\). Divisible by 2? Yes.\n           So \\( k=105 \\) is a solution.\n         \
+          \  Partner \\( 211-105 = 106 \\).\n           So 106 is Type 1000?\n           \\( 106 = 2 \\\
+          cdot 53 \\). Div by 2. Not 3,5,7.\n           So 106 is Type 1000.\n           Solutions: \\\
+          ( 105, 106 \\).\n           \n        Let's list all unique solutions found:\n        1, 15,\
+          \ 21, 36, 70, 85, 91, 105, 106, 120, 126, 141, 175, 190, 196, 210.\n        Sorted:\n      \
+          \  1, 15, 21, 36, 70, 85, 91, 105, 106, 120, 126, 141, 175, 190, 196, 210.\n        \n     \
+          \   We need \\( k \\ge 15 \\).\n        Exclude \\( k=1 \\).\n        Count: 15 solutions.\n\
+          \        \\( 15 > 10 \\).\n        So \\( b=211 \\) works."
+        proposals:
+        - title: Check if smaller \(b\) works
+    - title: Estimate how many solutions exist for large \(m\)
+      prob: 0.010405084668131651
+      logprob: -4.565460681915283

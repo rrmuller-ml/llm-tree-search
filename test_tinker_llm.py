@@ -136,9 +136,9 @@ class VocabTokenizer:
         return "".join(self.vocab[i] for i in ids)
 
 
-PROMPT = ["SYS USER", "<trace>", "\n", "<node>", "\n  ", "<parent>", "1", "</parent>", "\n"]
+PROMPT = ["SYS USER", "<trace>", "\n", "<node>", "\n  ", "<follow_proposal", " idx", '="', "1", '"/>', "\n"]
 GEN = ["  ", "<thought>", "via B", "</thought>", "<proposal>", "a", "</proposal>", "<proposal>", "b",
-       "</proposal>", "</node>", "\n", "<node>", "<parent>", "1", "</parent>", "<thought>", "b gives 180",
+       "</proposal>", "</node>", "\n", "<node>", "<follow_proposal", " idx", '="', "1", '"/>', "<thought>", "b gives 180",
        "</thought>", "</node>"]
 
 
@@ -180,6 +180,34 @@ def make_prefill(prompt_topk_full=True):
     return llm, client
 
 
+class TestIdxDigits(unittest.TestCase):
+    def test_unicode_digits_are_ignored(self):
+        tok = VocabTokenizer()
+        d1, sub0, sup2 = tok.ids(["1", "₀", "²"])
+        llm = TinkerPrefill(None, None, tok, SimpleNamespace(stop=[]))
+        self.assertEqual(llm._digit_dist([(d1, -0.1), (sub0, -2.0), (sup2, -3.0)]), {1: -0.1})
+
+
+class TestFollowProposalDetection(unittest.TestCase):
+    def test_reads_digit_after_follow_proposal(self):
+        prompt = ["SYS", "<trace>", "\n", "<node>", "\n  ", "<follow", "_proposal", " idx", '="', "1", '"/>', "\n"]
+        gen = ["  ", "<thought>", "x", "</thought>", "<proposal>", "a", "</proposal>", "<proposal>", "b",
+               "</proposal>", "</node>", "<node>", "<follow", "_proposal", " idx", '="', "0", '"/>', "<thought>",
+               "y", "</thought>", "</node>"]
+        tok = VocabTokenizer()
+        p_ids, g_ids = tok.ids(prompt), tok.ids(gen)
+        d0, d1 = tok.ids(["0", "1"])
+        gen_topk = [None] * len(g_ids)
+        gen_topk[gen.index("0")] = [(d0, -0.2), (d1, -1.7)]
+        prompt_topk = [None] * len(p_ids)
+        prompt_topk[prompt.index("1")] = [(d1, -0.1), (d0, -2.4)]
+        llm = TinkerPrefill(PrefillClient(g_ids, gen_topk, prompt_topk), PrefillRenderer(p_ids), tok,
+                            SimpleNamespace(stop=[]))
+        reply = llm("SYS", "USER", "<trace>\n")
+        self.assertEqual(reply.choice_logprobs, [{0: -0.2, 1: -1.7}])
+        self.assertEqual(reply.prefill_choice, {1: -0.1, 0: -2.4})
+
+
 class TestTinkerPrefill(unittest.TestCase):
     def test_reply_text_and_request(self):
         llm, client = make_prefill()
@@ -211,7 +239,7 @@ class TestTinkerPrefill(unittest.TestCase):
         self.assertEqual((a.logprob, b.logprob), (-1.8, -0.2))  # from the prompt (our choice)
         self.assertAlmostEqual(b.prob, math.exp(-0.2))
         pa, pb = created[0].proposals
-        self.assertEqual((pa.logprob, pb.logprob), (-2.5, -0.1))  # from the sampled <parent>
+        self.assertEqual((pa.logprob, pb.logprob), (-2.5, -0.1))  # from the sampled <follow_proposal>
         self.assertTrue(created[1].is_answer)
         self.assertEqual(Node.from_dict(root.to_dict()).first.proposals[0].logprob, -1.8)
 
