@@ -27,7 +27,9 @@ a CDN, so the page needs internet access.
 Each box is one `Node` and shows only that node's own fields:
 
 - a header with an id (`n0`, `n1`, …) and its depth
-- `thought` (`null` on the root)
+- `thought` (`null` on the root). LaTeX in thoughts, titles and the question
+  is rendered with [KaTeX](https://katex.org/): `$...$` and `\(...\)` inline,
+  `$$...$$` and `\[...\]` as display math. Without internet the raw text shows.
 - `proposals`, laid out side by side, each with its `title`, `prob` and
   `value` bars, and either `→ nX` (the node it points to) or `unexplored`
 

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thought Tree Viewer</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
   :root {
     --bg: #f4f4f2; --panel: #ffffff; --text: #1f2328; --muted: #6b7075; --line: #d3d6da;
@@ -53,6 +56,8 @@
   .field + .field { border-top: 1px dashed var(--line); }
   .fname { font-family: ui-monospace, monospace; font-size: 10px; color: var(--key); display: block; margin-bottom: 2px; }
   .thought { white-space: pre-wrap; }
+  .katex { font-size: 1.05em; }
+  .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
   .null { color: var(--null); font-style: italic; }
   .props { list-style: none; margin: 4px 0 0; padding: 0; display: flex; gap: 6px; align-items: stretch; }
   .prop { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 5px 8px; border: 1px solid var(--explored); border-bottom-width: 4px; border-radius: 6px; background: var(--explored-bg); position: relative; }
@@ -277,12 +282,37 @@ function select(n) {
 }
 
 // ---- main render ----
+// Render LaTeX ($...$, $$...$$, \(...\), \[...\]) in an element. No-op if KaTeX
+// failed to load (e.g. offline): the raw text stays visible.
+function renderMath(el) {
+  if (typeof renderMathInElement !== "function") return;
+  renderMathInElement(el, {
+    delimiters: [
+      { left: "$$", right: "$$", display: true },
+      { left: "\\[", right: "\\]", display: true },
+      { left: "$", right: "$", display: false },
+      { left: "\\(", right: "\\)", display: false },
+    ],
+    throwOnError: false,
+  });
+}
+
+function relayout() {
+  if (!state.model) return;
+  layout(state.model);
+  drawEdges(state.model);
+  applyScale();
+}
+
 function render() {
   canvas.querySelectorAll(".node").forEach(el => el.remove());
   const model = buildModel(state.data);
+  state.model = model;
   state.nodes = model.nodes;
   state.selected = null;
-  document.getElementById("question").textContent = "Q: " + (model.root.proposals[0]?.title ?? "");
+  const q = document.getElementById("question");
+  q.textContent = "Q: " + (model.root.proposals[0]?.title ?? "");
+  renderMath(q);
   for (const n of model.nodes) {
     const el = document.createElement("div");
     const kind = !n.parent ? "root" : n.dict.answer ? "answer" : "inner";
@@ -290,14 +320,15 @@ function render() {
     n.w = nodeWidth(n);
     el.style.width = n.w + "px";
     el.innerHTML = nodeHtml(n, model);
+    renderMath(el);
     el.addEventListener("click", e => { e.stopPropagation(); select(n); });
     canvas.appendChild(el);
     n.el = el;
   }
-  layout(model);
-  drawEdges(model);
-  applyScale();
+  relayout();
   renderStruct();
+  // KaTeX fonts load asynchronously and change node heights: lay out again.
+  document.fonts?.ready.then(relayout);
 }
 
 function applyScale() {
