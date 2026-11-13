@@ -6,20 +6,25 @@ HTML viewer for the trees it produces.
 The generation loop it is shaped for:
 
 1. **think**: develop a node by writing its `thought`
-2. **propose**: suggest several possible next paths, each with a short `title`,
-   a `value` estimate and a policy probability `prob`
-3. **pick**: choose a proposal (by value or prob) and develop it (back to 1)
-4. **answer**: a node whose thought contains the final answer is marked
-   `answer = True` and can no longer propose anything
+2. **propose**: suggest several possible next paths, each with a short `title`
+3. **pick**: choose a proposal and develop it (back to 1)
+4. **answer**: a node whose thought contains the final answer has no proposals
+   and is marked `answer = True`
 
-No LLM calls are included; this repo is only the structure.
+Each proposal can also carry a `value` (from a critic) and a policy
+probability `prob` (e.g. from the LLM's log-probs); the tree stores them but
+does not require them.
+
+[`llm.py`](llm.py) connects an LLM to the tree through a small XML format
+([below](#llm-in-the-loop)); any provider works.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
 | [`tree.py`](tree.py) | `Node` and `Proposal` classes |
-| [`test_tree.py`](test_tree.py) | Unit tests (`unittest`) |
+| [`llm.py`](llm.py) | XML codec for LLM output, plus `expand` and `search` |
+| [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py) | Unit tests (`unittest`) |
 | [`example.yaml`](example.yaml) | Example tree in `Node.to_dict()` format |
 | [`ui/`](ui/) | HTML viewer for trees ([README](ui/README.md)) |
 
@@ -110,10 +115,94 @@ root = Node.from_dict(yaml.safe_load(open("example.yaml")))
 
 `tree.py` has no dependencies. PyYAML is only needed to read YAML files.
 
+## LLM in the loop
+
+Each LLM call writes a **depth-first chain of nodes**. A node lists candidate
+proposals; the next node says with `<parent>` which of those it develops. The
+proposals not picked stay unexplored in the tree, so the search can come back
+to them later.
+
+```xml
+<node>
+  <thought>Split into easier parts.</thought>
+  <proposal idx="0">Distribute over 15: 12*10 + 12*5</proposal>
+  <proposal idx="1">Double and halve: 6*30</proposal>
+</node>
+<node>
+  <parent>0</parent>
+  <thought>12*10 = 120 and 12*5 = 60, so 12*15 = 180.</thought>
+</node>
+```
+
+Rules:
+
+- The first node of a reply develops the proposal the code asked for, so it has no `<parent>`.
+- `<parent>k</parent>` is the `idx` of a proposal of the **previous** node.
+  `idx` defaults to the proposal's 0-based position.
+- A node with **no proposals is the answer**: its thought holds the final
+  answer and no node follows it. It is stored with `answer = True`.
+- A reply may stop on a node with open proposals; the search resumes from there.
+- Text outside `<node>` tags and unknown attributes are ignored. A reply cut
+  off mid-node keeps every complete node and drops the unfinished one.
+- A reply that breaks a rule raises `DecodeError` and leaves the tree unchanged.
+
+The LLM writes no scores. `Proposal.prob` is meant to come from the log-prob
+of the LLM writing a given `<parent>` after a node, and `Proposal.value` from
+a trained critic; the codec leaves both unset.
+
+The prompt for each call (`encode_context`) holds the question, the path so
+far (each step's title and thought) and the proposal to develop:
+
+```xml
+<question>What is 12 * 15?</question>
+<path>
+  <step title="What is 12 * 15?">Split into easier parts.</step>
+</path>
+<develop>Double and halve: 6*30</develop>
+```
+
+### Running a search
+
+The LLM is any function `llm(system, prompt) -> str`:
+
+```python
+from llm import search
+from tree import Node
+
+def llm(system: str, prompt: str) -> str:
+    ...  # call your model (gpt-oss, Claude, a local model, ...) and return its text
+
+root = Node.new_root("What is 12 * 15?")
+result = search(root, llm, max_calls=10)
+print(result.answer.thought if result.answer else "no answer", result.calls, result.errors)
+```
+
+`search` repeats until a node gives the answer or `max_calls` runs out:
+
+1. Pick the unexplored proposal with the highest `score(node, proposal)`.
+   The first call picks the question.
+2. Ask the LLM to develop it (`expand`) and add the chain to the tree.
+
+The default score, `depth_first`, takes the deepest open proposal, which is
+plain DFS backtracking. Once log-probs or a critic are available, pass your
+own, e.g. `score=lambda node, p: p.prob or 0.0`. A proposal whose call fails to
+decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
+
+| Function | Purpose |
+| --- | --- |
+| `SYSTEM_PROMPT` | Explains the format to the model |
+| `encode_context(node, proposal)` | Prompt for one call |
+| `decode_chain(text)` / `encode_chain(chain)` | XML text ⇄ list of `NodeSpec` |
+| `validate_chain(chain)` | Check the rules |
+| `apply_chain(node, proposal, chain)` | Add the chain to the tree |
+| `expand(node, proposal, llm)` | One call: encode, call, decode, apply |
+| `pick_next(root, score)` / `depth_first` | Choose the next proposal |
+| `search(root, llm, max_calls, score)` | The full loop |
+
 ## Tests
 
 ```bash
-python3 -m unittest -v test_tree
+python3 -m unittest -v test_tree test_llm
 ```
 
 The `example.yaml` tests are skipped if PyYAML is not installed.
