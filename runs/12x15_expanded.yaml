@@ -1,0 +1,31 @@
+proposals:
+- title: What is 12 * 15?
+  node:
+    thought: I need to calculate 12 * 15. I can break 12 into 10 + 2 to use the distributive property.
+    proposals:
+    - title: Calculate 10 * 15 and 2 * 15 separately.
+      node:
+        thought: I will calculate 10 * 15 which is 150, and 2 * 15 which is 30.
+        proposals:
+        - title: Add 150 and 30.
+          node:
+            thought: 150 + 30 = 180. So 12 * 15 = 180.
+            answer: true
+        - title: Verify by dividing 180 by 12.
+    - title: Use 12 * 15 = 12 * (10 + 5).
+      node:
+        thought: Using 12 * (10 + 5) seems straightforward. I will calculate 12 * 10 and 12 * 5.
+        proposals:
+        - title: Compute 12 * 10 = 120.
+          node:
+            thought: 12 * 10 is 120.
+            proposals:
+            - title: 'Next, compute the other part: 12 * 5.'
+              node:
+                thought: 12 * 5 is half of 12 * 10, which is 120 / 2 = 60.
+                proposals:
+                - title: 'Add the two results: 120 + 60.'
+                  node:
+                    thought: 120 + 60 = 180.
+                    answer: true
+        - title: Compute 12 * 5 = 60.
