@@ -376,30 +376,3 @@ def _merge_into(dst: Node, src: Node) -> None:
             _merge_into(dp.node, sp.node)
     if dst.answer and dst.proposals:
         raise ValueError("Merged node has both an answer and proposals.")
-
-
-if __name__ == "__main__":
-    Q = "What is 12 * 15?"
-
-    # Full tree: root -> first node (initial thought) -> proposals -> ...
-    tree = Node.new_root(Q, "Split the multiplication into easier parts.")
-    tree.first.propose_many([
-        {"title": "Distribute over 15: 12*10 + 12*5", "prob": 0.6, "value": 0.8},
-        {"title": "Double and halve: 6*30", "prob": 0.4, "value": 0.7},
-    ])
-    pick = tree.first.best_proposal(by="value")
-    dist = tree.first.develop(pick, "12*10 = 120 and 12*5 = 60.")
-    dist.then("Sum: 120 + 60", "120 + 60 = 180", prob=1.0, value=0.95, answer=True)
-
-    # A standalone branch: same type, a root with single proposals all the way down
-    branch = Node.new_root(Q, "Split the multiplication into easier parts.")
-    branch.first.then("Use tens: 10*15 + 2*15", "10*15 = 150 and 2*15 = 30.", prob=0.5, value=0.85) \
-                .then("Sum: 150 + 30", "150 + 30 = 180", value=0.9, answer=True)
-
-    print("BEFORE:")
-    print(tree, "\n")
-    print("BRANCH:")
-    print(branch.render(show_thoughts=True), "\n")
-    tree.merge(branch)
-    print("AFTER:")
-    print(tree)

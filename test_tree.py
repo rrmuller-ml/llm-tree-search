@@ -1,6 +1,14 @@
 import unittest
+from pathlib import Path
 
 from tree import Node, Proposal
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
+EXAMPLE = Path(__file__).parent / "example.yaml"
 
 Q = "What is 12 * 15?"
 FIRST = "Split into easier parts."
@@ -226,6 +234,25 @@ class TestBranches(unittest.TestCase):
         self.assertTrue(all(b.is_branch for b in branches))
         rebuilt = Node.from_branches(branches)
         self.assertEqual({p.title for p in rebuilt.first.proposals}, {"Distribute", "Double/halve"})
+
+
+@unittest.skipIf(yaml is None, "PyYAML not installed")
+class TestExampleYaml(unittest.TestCase):
+    def setUp(self):
+        self.data = yaml.safe_load(EXAMPLE.read_text())
+        self.root = Node.from_dict(self.data)
+
+    def test_loads_and_roundtrips(self):
+        self.assertEqual(self.root.to_dict(), self.data)
+
+    def test_structure(self):
+        root = self.root
+        self.assertEqual(root.question, "What is 12 * 15?")
+        self.assertEqual(len(root.first.proposals), 3)
+        self.assertEqual(len(root.answer_nodes()), 2)
+        self.assertEqual([p.title for _, p in root.unexplored()], ["Double and halve: 6*30"])
+        self.assertEqual(root.best_answer().title, "Sum: 120 + 60")
+        self.assertEqual(len(root.branches()), 2)
 
 
 if __name__ == "__main__":
