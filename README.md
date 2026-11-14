@@ -306,6 +306,23 @@ answer = continue_from(node, proposal, model)
 - The new nodes and their `<follow_proposal>` log-probs are added to the tree;
   save it with `root.to_dict()` to view it in the UI.
 
+For example, here is "What is 17 * 23?" with the base model on Tinker. Each box
+is a node, titled by the proposal it follows; `p` is that proposal's
+`<follow_proposal>` probability. Green boxes are answer nodes, and dashed boxes
+are proposals nobody has followed yet.
+
+`generate` writes one depth-first chain. It takes the distribution route
+(p = 0.095), double-checks with difference of squares, and answers 391. The
+first node's most likely proposal (difference of squares, p = 0.905) is left
+unexplored:
+
+![Tree after generate](docs/tree_17x23_generate.svg)
+
+`continue_from` on that proposal adds the blue branch (two nodes) in one call,
+which reaches 391 by the other route:
+
+![Tree after continue_from](docs/tree_17x23_continue.svg)
+
 | Function | Purpose |
 | --- | --- |
 | `generate(question, model)` | `(answer, root)`: one chain from the question |
