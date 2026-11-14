@@ -6,9 +6,10 @@ runs/aime_eval/trees/ and record every answer the tree reaches.
     uv run python expand_aime.py --wrong                        # every well-formed tree with a wrong answer
 
 Each expansion is one model call (assistant prefill, Qwen3.6-35B-A3B, thinking
-off): it develops the unexplored proposal with the highest `prob` (the
-log-prob policy captured during generation) or, with --score depth, the
-deepest one. New proposals become candidates for the next expansion.
+off, `continue_from`): it develops the unexplored proposal with the highest
+`prob` (the log-prob policy captured during generation). New proposals become
+candidates for the next expansion; a proposal whose call adds nothing is not
+retried.
 
 Writes runs/aime_eval/trees_expanded/<id>.yaml (the grown tree, for the
 viewer) and runs/aime_eval/expansions.jsonl (one line per problem: every
@@ -20,7 +21,6 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
-import re
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -28,23 +28,18 @@ from typing import Optional
 
 import yaml
 
-from llm import DecodeError, PartialChain, depth_first, expand_prefill, pick_next
+from llm import answer_of, continue_from
 from tree import Node, Proposal
 
 RESULTS = Path("runs/aime_eval/tree.jsonl")
 OUT = Path("runs/aime_eval/trees_expanded")
 LOG = Path("runs/aime_eval/expansions.jsonl")
 MODEL = "Qwen/Qwen3.6-35B-A3B"
-_ANSWER = re.compile(r"<answer>\s*(.*?)\s*</answer>", re.S)
-
 
 def tree_answers(root: Node) -> list[Optional[int]]:
     """The answer of every answer node, in tree order (None if not an integer)."""
-    out = []
-    for n in root.answer_nodes():
-        found = _ANSWER.findall(n.thought or "")
-        out.append(int(found[-1]) if found and re.fullmatch(r"\d{1,3}", found[-1]) else None)
-    return out
+    answers = [answer_of(n) for n in root.answer_nodes()]
+    return [int(a) if a is not None and a.isascii() and a.isdigit() and len(a) <= 3 else None for a in answers]
 
 
 def majority_answer(answers: list[Optional[int]]) -> Optional[int]:
@@ -59,25 +54,22 @@ def by_prob(node: Node, proposal: Proposal) -> float:
     return proposal.prob if proposal.prob is not None else -1.0
 
 
-def expand_tree(row: dict, base_model, n: int, score) -> dict:
+def expand_tree(row: dict, base_model, n: int) -> dict:
     model = dataclasses.replace(base_model)  # own `last`, shared client
     root = Node.from_dict(yaml.safe_load(Path(row["tree"]).read_text()))
     log, failed = [], set()
     for step in range(1, n + 1):
-        nxt = pick_next(root, score, frozenset(failed))
-        if nxt is None:
+        candidates = [(nd, p) for nd, p in root.unexplored() if id(p) not in failed]
+        if not candidates:
             log.append({"step": step, "note": "no unexplored proposal left"})
             break
-        node, prop = nxt
-        entry = {"step": step, "proposal": prop.title, "prob": prop.prob}
-        try:
-            entry["new_nodes"] = len(expand_prefill(node, prop, model))
-        except PartialChain as e:
-            entry.update(new_nodes=len(e.created), error=str(e))
-        except DecodeError as e:
+        node, prop = max(candidates, key=lambda c: by_prob(*c))
+        before = sum(1 for _ in root.walk())
+        answer = continue_from(node, prop, model)
+        new_nodes = sum(1 for _ in root.walk()) - before
+        if new_nodes == 0:
             failed.add(id(prop))
-            entry.update(new_nodes=0, error=str(e))
-        log.append(entry)
+        log.append({"step": step, "proposal": prop.title, "prob": prop.prob, "new_nodes": new_nodes, "answer": answer})
     OUT.mkdir(parents=True, exist_ok=True)
     tree_path = OUT / f"{row['id']}.yaml"
     tree_path.write_text(yaml.safe_dump(root.to_dict(), sort_keys=False, allow_unicode=True, width=100))
@@ -102,7 +94,6 @@ def main() -> None:
     ap.add_argument("--id", action="append", default=[], help="problem id, e.g. aime2024_62 (repeatable)")
     ap.add_argument("--wrong", action="store_true", help="every tree whose format is correct but answer wrong")
     ap.add_argument("--n", type=int, default=5, help="expansions (model calls) per tree")
-    ap.add_argument("--score", choices=["prob", "depth"], default="prob")
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--max-tokens", type=int, default=16384)
     ap.add_argument("--temperature", type=float, default=0.7)
@@ -121,9 +112,8 @@ def main() -> None:
     from tinker_llm import TinkerPrefill
 
     base = TinkerPrefill.create(model=args.model, max_tokens=args.max_tokens, temperature=args.temperature)
-    score = by_prob if args.score == "prob" else depth_first
     with ThreadPoolExecutor(max_workers=len(ids)) as pool:
-        results = list(pool.map(lambda i: expand_tree(rows[i], base, args.n, score), dict.fromkeys(ids)))
+        results = list(pool.map(lambda i: expand_tree(rows[i], base, args.n), dict.fromkeys(ids)))
 
     previous = {r["id"]: r for r in map(json.loads, LOG.read_text().splitlines())} if LOG.exists() else {}
     previous.update({r["id"]: r for r in results})

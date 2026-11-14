@@ -22,7 +22,7 @@ the tree, and the result opens in the viewer. [`eval_aime.py`](eval_aime.py)
 compares the tree format with plain chain-of-thought on AIME
 ([results](#aime-evaluation)).
 
-## Quick start: search with a real LLM
+## Quick start: run a real LLM
 
 ```bash
 uv sync
@@ -33,10 +33,10 @@ uv run tinker auth login
 ```
 
 ```bash
-uv run python run_search.py "What is 17 * 23?" --out runs/17x23.yaml --max-calls 3
+uv run python run_search.py "What is 17 * 23?" --out runs/17x23.yaml
 ```
 
-To develop one unexplored proposal of a saved tree (one call):
+To continue one unexplored proposal of a saved tree (one call):
 
 ```bash
 uv run python run_search.py --load runs/17x23.yaml \
@@ -65,18 +65,18 @@ Saved runs, both from these commands:
   The model's thought switches back to difference of squares instead of
   following the proposal's title, so the branch repeats the same method.
 
-`run_search.py` options: `--max-calls N` and `--model NAME` (default
-`Qwen/Qwen3.6-35B-A3B`, with [assistant prefill](#assistant-prefill)).
-Each call costs Tinker credits; `--max-calls` caps them.
+`run_search.py` makes exactly one call either way (`generate` for a question,
+`continue_from` with `--load`/`--expand`). `--model NAME` picks another Tinker
+model (default `Qwen/Qwen3.6-35B-A3B`, with [assistant prefill](#assistant-prefill)).
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
 | [`tree.py`](tree.py) | `Node` and `Proposal` classes |
-| [`llm.py`](llm.py) | XML codec for LLM output, plus `expand` and `search` |
+| [`llm.py`](llm.py) | XML codec for LLM output, plus `generate` and `continue_from` |
 | [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (assistant prefill), `TinkerLLM` (plain chat, used by the CoT baseline) |
-| [`run_search.py`](run_search.py) | Command line: run a search on Tinker and save the tree |
+| [`run_search.py`](run_search.py) | Command line: generate or continue a chain on Tinker and save the tree |
 | [`eval_aime.py`](eval_aime.py) | AIME 2024 + 2025 evaluation: CoT vs one tree chain, strict format scoring |
 | [`expand_aime.py`](expand_aime.py) | Grow saved AIME trees with more expansions and record every answer they reach |
 | [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME evaluation problems with answers |
@@ -179,8 +179,8 @@ root = Node.from_dict(yaml.safe_load(open("example.yaml")))
 
 Each LLM call writes a **depth-first chain of nodes**. A node lists candidate
 proposals; the next node says with `<follow_proposal>` which of those it develops. The
-proposals not picked stay unexplored in the tree, so the search can come back
-to them later.
+proposals not picked stay unexplored in the tree, so a later call can come
+back to them.
 
 ```xml
 <node>
@@ -219,7 +219,7 @@ Rules:
   `<answer>...</answer>` element after `</thought>`; nothing follows it. It is
   stored with `answer = True`, and the `<answer>` element is kept at the end of
   its stored thought (the tree has no separate answer field).
-- A reply may stop on a node with open proposals; the search resumes from there.
+- A reply may stop on a node with open proposals; `continue_from` can develop them later.
 - Text outside `<node>` tags and unknown attributes are ignored. A reply cut
   off mid-node keeps every complete node and drops the unfinished one.
 - After a node with exactly one proposal there is nothing to choose, so the
@@ -277,44 +277,46 @@ The model writes the rest of that node (and possibly more nodes). Text after
 every proposal of each node on the path is still listed, so `idx` values stay
 the same as in the tree.
 
-### Running a search
+### Generating and continuing
 
-The model is any function `prefill(system, user, prefix)` that returns the
-continuation (a `str`, or an `llm.Reply` with log-probs):
+Two calls, both one model call with assistant prefill:
 
 ```python
-from llm import search
+from llm import continue_from, generate
 from tinker_llm import TinkerPrefill
-from tree import Node
 
-prefill = TinkerPrefill.create()  # Qwen/Qwen3.6-35B-A3B, thinking off
-root = Node.new_root("What is 12 * 15?")
-result = search(root, prefill, max_calls=10)
-print(result.answer.thought if result.answer else "no answer", result.calls, result.errors)
+model = TinkerPrefill.create()  # Qwen/Qwen3.6-35B-A3B, thinking off
+
+# chain = f(question): a full depth-first chain from the question
+answer, root = generate("What is 12 * 15?", model)
+
+# answer = g(partial chain, question): develop another proposal of a node on
+# the chain. The partial chain is the path from the question to `node` plus the
+# chosen proposal; the question is the tree's root.
+node, proposal = root.unexplored()[0]
+answer = continue_from(node, proposal, model)
 ```
 
-`search` repeats until a node gives the answer or `max_calls` runs out:
-
-1. Pick the unexplored proposal with the highest `score(node, proposal)`.
-   The first call picks the question.
-2. Ask the model to develop it (`expand_prefill`) and add the chain to the tree.
-
-The default score, `depth_first`, takes the deepest open proposal, which is
-plain DFS backtracking. Once log-probs or a critic are available, pass your
-own, e.g. `score=lambda node, p: p.prob or 0.0`. A proposal whose call fails to
-decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
+- The model is any function `prefill(system, user, prefix)` that returns the
+  continuation (a `str`, or an `llm.Reply` with log-probs).
+- Both return the `<answer>` of the node the call ends on, or `None` if the
+  reply stopped on open proposals or broke the format. A broken reply's valid
+  start is still added to the tree; an unreadable one leaves it unchanged.
+- The new nodes and their `<follow_proposal>` log-probs are added to the tree;
+  save it with `root.to_dict()` to view it in the UI.
 
 | Function | Purpose |
 | --- | --- |
+| `generate(question, model)` | `(answer, root)`: one chain from the question |
+| `continue_from(node, proposal, model)` | `answer`: one chain developing `proposal` of `node` |
+| `answer_of(node)` | The `<answer>` of an answer node |
 | `SYSTEM_PROMPT` | Explains the format to the model |
 | `prefill_parts(node, proposal)` | User message, assistant prefill and open node for one call |
 | `encode_trace(node)` | Path down to `node` as XML nodes |
 | `decode_chain(text)` / `encode_chain(chain)` | XML text ⇄ list of `NodeSpec` |
 | `validate_chain(chain)` | Check the rules |
 | `apply_chain(node, proposal, chain)` | Add the chain to the tree |
-| `expand_prefill(node, proposal, prefill)` | One call: build the prefill, call, decode, apply |
-| `pick_next(root, score)` / `depth_first` | Choose the next proposal |
-| `search(root, prefill, max_calls, score)` | The full loop |
+| `expand_prefill(node, proposal, model)` | The call behind both: raises `DecodeError` / `PartialChain` instead of returning `None` |
 
 ### Qwen3.6-35B-A3B on Tinker
 
@@ -331,7 +333,7 @@ uv run tinker auth login
 
 (or set `TINKER_API_KEY`).
 
-- `TinkerPrefill.create()` is the model for `search`: `Qwen/Qwen3.6-35B-A3B`
+- `TinkerPrefill.create()` is the model for `generate` and `continue_from`: `Qwen/Qwen3.6-35B-A3B`
   with the `qwen3_5_disable_thinking` renderer, which opens the assistant turn
   with an empty, closed `<think></think>` block, so the model answers without
   hidden reasoning; the reasoning lives in each `<thought>`. The prefill is
@@ -356,7 +358,7 @@ temperature 0.7, up to 16,384 output tokens and one sample per problem.
 - **CoT**: one chat call. The system prompt asks to think step by step and end
   with `<answer>N</answer>`.
 - **Tree**: the tree prompt (`SYSTEM_PROMPT`, assistant prefill) and **one
-  depth-first chain** (`search(..., max_calls=1)`). The question ends with
+  depth-first chain** (`generate`). The question ends with
   "(The answer is an integer from 0 to 999, written between `<answer>` and
   `</answer>`.)".
 
@@ -409,8 +411,8 @@ uv run python eval_aime.py --rescore runs/aime_eval/tree.jsonl # re-apply the ch
 
 [`expand_aime.py`](expand_aime.py) grows saved trees: each expansion is one
 call that develops the unexplored proposal with the highest `prob` (the
-log-prob policy captured during generation; `--score depth` for DFS order),
-and new proposals become candidates for the next one.
+log-prob policy captured during generation) with `continue_from`, and new
+proposals become candidates for the next one.
 
 ```bash
 uv run python expand_aime.py --wrong            # every well-formed tree with a wrong answer, 5 expansions each

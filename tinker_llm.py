@@ -1,17 +1,16 @@
 """Thinking Machines' Tinker adapters for llm.py.
 
     from tinker_llm import TinkerPrefill
-    from llm import search
-    from tree import Node
+    from llm import generate
 
-    prefill = TinkerPrefill.create()               # Qwen/Qwen3.6-35B-A3B, thinking off
-    result = search(Node.new_root("What is 12 * 15?"), prefill=prefill, max_calls=10)
+    model = TinkerPrefill.create()                 # Qwen/Qwen3.6-35B-A3B, thinking off
+    answer, root = generate("What is 12 * 15?", model)
 
 Needs `tinker` and `tinker-cookbook` (`uv add tinker tinker-cookbook`) and
 TINKER_API_KEY in the environment (or `tinker auth login`).
 
 `TinkerPrefill` runs a chat model with assistant prefill, for
-`search(root, prefill=...)`, and reads the log-prob of each <follow_proposal>
+`generate` and `continue_from`, and reads the log-prob of each <follow_proposal>
 choice.
 
 `TinkerLLM` is a plain chat call, `llm(system, prompt) -> str` (same Qwen model
@@ -130,7 +129,7 @@ def _at_follow_idx(text: str) -> bool:
 @dataclass
 class TinkerPrefill:
     """Chat model with assistant prefill, the `prefill(system, user, prefix) -> str`
-    for llm.search(..., prefill=...).
+    for llm.generate and llm.continue_from.
 
     The cookbook renderer builds the chat prompt up to the opened assistant turn
     and appends `prefix` as plain text (`build_generation_prompt(..., prefill=)`).
@@ -141,8 +140,8 @@ class TinkerPrefill:
     each idx digit (from top-k log-probs, so no extra calls). `last` keeps the
     sampled tokens and their log-probs.
 
-        prefill = TinkerPrefill.create()   # Qwen/Qwen3.6-35B-A3B, thinking off
-        result = search(Node.new_root("What is 12 * 15?"), prefill=prefill)
+        model = TinkerPrefill.create()   # Qwen/Qwen3.6-35B-A3B, thinking off
+        answer, root = generate("What is 12 * 15?", model)
     """
 
     sampling_client: Any

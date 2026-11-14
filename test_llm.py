@@ -10,14 +10,14 @@ from llm import (
     apply_chain,
     decode_continuation,
     decode_chain,
-    depth_first,
     encode_chain,
     encode_trace,
     expand_prefill,
     prefill_parts,
     question_node,
-    pick_next,
-    search,
+    answer_of,
+    continue_from,
+    generate,
     validate_chain,
     valid_prefix,
     PartialChain,
@@ -187,53 +187,41 @@ class TestLoop(unittest.TestCase):
         self.assertEqual(model.calls[0][0], SYSTEM_PROMPT)
         self.assertEqual(len(root.answer_nodes()), 1)
 
-    def test_depth_first_default(self):
-        root = Node.new_root(Q, "Split.")
-        root.first.propose("shallow")
-        deep = root.first.propose("deep path")
-        child = root.first.develop(deep, "going deeper")
-        child.propose("x")
-        child.propose("y")
-        self.assertEqual(pick_next(root)[1].title, "x")  # deepest node, earliest proposal
+    def test_generate_returns_answer_and_tree(self):
+        reply = ("<thought>Split.</thought><proposal>A</proposal><proposal>B</proposal></node>"
+                 "<node><follow_proposal idx='1'/><thought>via B</thought>\n<answer>180</answer></node>")
+        answer, root = generate(Q, FakePrefill(reply))
+        self.assertEqual(answer, "180")
+        self.assertEqual(root.question, Q)
+        self.assertFalse(root.first.get_proposal("A").is_explored)
 
-    def test_custom_score_and_skip(self):
-        root = Node.new_root(Q, "Split.")
-        a = root.first.propose("a")
-        b = root.first.propose("b")
-        a.prob, b.prob = 0.2, 0.8  # e.g. from log-probs of <follow_proposal>
-        by_prob = lambda n, p: p.prob or 0.0
-        self.assertEqual(pick_next(root, by_prob)[1].title, "b")
-        self.assertEqual(pick_next(root, by_prob, frozenset({id(b)}))[1].title, "a")
-        self.assertEqual(pick_next(root, depth_first)[1].title, "a")
+    def test_generate_stopping_on_open_proposals(self):
+        reply = "<thought>Split.</thought><proposal>A</proposal><proposal>B</proposal></node>"
+        answer, root = generate(Q, FakePrefill(reply))
+        self.assertIsNone(answer)
+        self.assertEqual(len(root.unexplored()), 2)
 
-    def test_search_backtracks(self):
-        first = (
-            "<thought>Split.</thought><proposal>Try A</proposal><proposal>Try B</proposal></node>"
-            "<node><follow_proposal idx='0'/><thought>A looks hard.</thought><proposal>Push on A</proposal></node>"
-        )
-        second = "<thought>Pushing on A: 180</thought></node>"
+    def test_generate_with_unreadable_reply(self):
+        answer, root = generate(Q, FakePrefill("garbage"))
+        self.assertIsNone(answer)
+        self.assertIsNone(root.first)  # tree unchanged
+
+    def test_continue_from_partial_chain(self):
+        first = "<thought>Split.</thought><proposal>A</proposal><proposal>B</proposal></node>"
+        second = "<thought>via B</thought><answer>180</answer></node>"
         model = FakePrefill(first, second)
-        root = Node.new_root(Q)
-        result = search(root, model, max_calls=5)
-        self.assertEqual(result.calls, 2)
-        self.assertEqual(result.answer.title, "Push on A")  # DFS resumes the deepest open proposal
-        self.assertIn("<proposal idx=\"0\">Push on A</proposal>", model.calls[1][2])
+        _, root = generate(Q, model)
+        answer = continue_from(root.first, "B", model)
+        self.assertEqual(answer, "180")
+        self.assertTrue(model.calls[1][2].endswith('<node>\n  <follow_proposal idx="1"/>\n'))
+        self.assertIn(f"<question>{Q}</question>", model.calls[1][1])
 
-    def test_search_skips_failed_proposal(self):
-        root = Node.new_root(Q)
-        result = search(root, FakePrefill("garbage"), max_calls=5)
-        self.assertIsNone(result.answer)
-        self.assertEqual(result.calls, 1)  # question failed; nothing else to try
-        self.assertEqual(len(result.errors), 1)
-
-    def test_search_stops_at_budget(self):
+    def test_answer_of(self):
         root = Node.new_root(Q, "Split.")
-        for t in "abc":
-            root.first.propose(t)
-        reply = "<thought>try</thought><proposal>more</proposal></node>"
-        result = search(root, FakePrefill(reply, reply, reply), max_calls=2)
-        self.assertEqual(result.calls, 2)
-        self.assertIsNone(result.answer)
+        a = root.first.then("A", "x = 3\n<answer>3</answer>", answer=True)
+        self.assertEqual(answer_of(a), "3")
+        self.assertIsNone(answer_of(root.first))
+        self.assertIsNone(answer_of(None))
 
 
 class TestDecodeContinuation(unittest.TestCase):
@@ -271,7 +259,7 @@ class TestPrefillMode(unittest.TestCase):
         self.assertEqual(prefill, f'<trace>\n{question_node(Q)}\n<node>\n  <follow_proposal idx="0"/>\n')
         self.assertEqual(opener, '<node>\n  <follow_proposal idx="0"/>\n')
 
-    def test_expand_and_search(self):
+    def test_two_calls(self):
         calls = []
 
         def model(system, user, prefill):
@@ -282,8 +270,12 @@ class TestPrefillMode(unittest.TestCase):
                         "  <proposal>Push on A</proposal>\n</node>\n")
             return "  <thought>Pushing on A: 180</thought>\n</node>\n</trace>"
 
-        result = search(Node.new_root(Q), prefill=model, max_calls=5)
-        self.assertEqual(result.answer.title, "Push on A")
+        answer, root = generate(Q, model)
+        self.assertIsNone(answer)
+        node, prop = root.unexplored()[-1]
+        self.assertEqual(prop.title, "Push on A")
+        self.assertEqual(continue_from(node, prop, model), None)  # answer node without <answer>
+        self.assertEqual(root.answer_nodes()[0].title, "Push on A")
         self.assertTrue(calls[1].endswith('<node>\n  <follow_proposal idx="0"/>\n'))
 
 
@@ -323,15 +315,12 @@ class TestRepairAndSalvage(unittest.TestCase):
         self.assertEqual(len(ctx.exception.created), 2)
         self.assertEqual(root.first.get_proposal("A").node.thought, "via A")
 
-    def test_search_continues_after_partial(self):
-        first = ("  <thought>Split.</thought>\n  <proposal>A</proposal>\n  <proposal>B</proposal>\n</node>\n"
+    def test_generate_keeps_valid_start_of_partial_reply(self):
+        reply = ("  <thought>Split.</thought>\n  <proposal>A</proposal>\n  <proposal>B</proposal>\n</node>\n"
                  "<node>\n  <follow_proposal idx='9'/>\n  <thought>bad</thought>\n</node>")
-        second = "  <thought>A gives 180</thought>\n</node>"
-        replies = [first, second]
-        result = search(Node.new_root(Q), prefill=lambda s, u, p: replies.pop(0), max_calls=5)
-        self.assertEqual(result.answer.title, "A")
-        self.assertEqual(result.calls, 2)
-        self.assertEqual(len(result.errors), 1)
+        answer, root = generate(Q, lambda s, u, p: reply)
+        self.assertIsNone(answer)
+        self.assertEqual([p.title for p in root.first.proposals], ["A", "B"])
 
 
 class TestChoiceLogprobs(unittest.TestCase):

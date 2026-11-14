@@ -4,7 +4,7 @@ import math
 import unittest
 from types import SimpleNamespace
 
-from llm import expand_prefill, search
+from llm import expand_prefill, generate
 from tinker_llm import TinkerLLM, TinkerPrefill, _text_content
 from tree import Node
 
@@ -218,10 +218,11 @@ class TestTinkerPrefill(unittest.TestCase):
         self.assertEqual(reply.choice_logprobs, [None])
         self.assertIsNone(reply.prefill_choice)
 
-    def test_plugs_into_search(self):
+    def test_plugs_into_generate(self):
         llm, _ = make_prefill()
-        result = search(Node.new_root("Q?"), prefill=llm, max_calls=3)
-        self.assertEqual(result.answer.thought, "b gives 180")
+        answer, root = generate("Q?", llm)
+        self.assertIsNone(answer)  # the fake reply's answer node has no <answer> element
+        self.assertEqual(root.answer_nodes()[0].thought, "b gives 180")
 
 
 if __name__ == "__main__":

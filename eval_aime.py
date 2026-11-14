@@ -5,7 +5,7 @@ Two methods, same model, temperature and token budget:
 - cot:  one chat call with a "think step by step" prompt; the answer goes in
         <answer>N</answer>.
 - tree: the tree prompt (SYSTEM_PROMPT + assistant prefill), one depth-first
-        chain (search with max_calls=1); the answer goes in <answer>N</answer>
+        chain (`generate`, one call); the answer goes in <answer>N</answer>
         inside the final node's thought.
 
     uv run python eval_aime.py --method both --workers 16
@@ -29,8 +29,7 @@ from typing import Optional
 
 import yaml
 
-from llm import search
-from tree import Node
+from llm import generate
 
 DATA = Path("data/aime_2024_2025.jsonl")
 OUT = Path("runs/aime_eval")
@@ -159,8 +158,7 @@ def run_tree(base_prefill, row: dict) -> dict:
         replies.append(reply.text)
         return reply
 
-    root = Node.new_root(row["problem"] + TREE_SUFFIX)
-    result = search(root, prefill=recording, max_calls=1)
+    _, root = generate(row["problem"] + TREE_SUFFIX, recording)
     reply = replies[-1] if replies else ""
     ok, pred, checks = strict_tree(reply)
     tree_path = OUT / "trees" / f"{row['id']}.yaml"
@@ -170,11 +168,10 @@ def run_tree(base_prefill, row: dict) -> dict:
         "pred": pred,
         "format_ok": ok,
         "checks": checks,
-        "reached_answer_node": result.answer is not None,
+        "reached_answer_node": bool(root.answer_nodes()),
         "nodes": sum(1 for _ in root.walk()) - 1,
         "tokens": len(model.last.tokens) if model.last else 0,
         "clean": model.last.clean if model.last else False,
-        "errors": result.errors,
         "tree": str(tree_path),
         "text": reply,
     }

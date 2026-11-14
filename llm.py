@@ -1,4 +1,8 @@
-"""LLM-in-the-loop for the thought tree: XML codec + search.
+"""LLM-in-the-loop for the thought tree: XML codec + two calls.
+
+    answer, root = generate(question, model)        # chain = f(question)
+    answer = continue_from(node, proposal, model)    # answer = g(partial chain, question)
+
 
 The LLM writes a depth-first chain of nodes. Each node first lists candidate
 proposals; the *next* node then says, with <follow_proposal>, which of those proposals
@@ -36,13 +40,12 @@ it develops. Proposals not picked stay unexplored in the tree.
   develop); the model writes the rest.
 - A node with no proposals is the answer: its thought is the final answer and
   nothing follows it.
-- A reply may stop on a node with open proposals; search resumes there later.
+- A reply may stop on a node with open proposals; continue_from can develop them later.
 - A truncated reply keeps every complete <node> and drops the unfinished one.
 
 The LLM does not write scores. A proposal's `prob` is meant to come from the
 log-prob of the LLM writing that <follow_proposal>, and its `value` from a trained
-critic; both are left unset here. `search` takes a `score` function so either
-can be plugged in later.
+critic; `value` is left unset here.
 
 The model is called with assistant prefill: `prefill(system, user, prefix)`
 continues a reply that is pre-started with the trace so far, cut after the node
@@ -61,7 +64,6 @@ from typing import Callable, Optional
 from tree import Node, Proposal
 
 PrefillLLM = Callable[[str, str, str], "str | Reply"]  # (system, user, assistant prefill) -> continuation
-Score = Callable[[Node, Proposal], float]
 
 EXAMPLE_QUESTION = "What is 14 * 25?"
 
@@ -438,61 +440,35 @@ def expand_prefill(node: Node, proposal: Proposal | str, llm: PrefillLLM) -> lis
     return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, user, prefill), opener)
 
 
-def depth_first(node: Node, proposal: Proposal) -> float:
-    """Default score: deepest node first, then the earliest proposal of that node.
-    Gives plain DFS backtracking when nothing better is available."""
-    return node.depth - node.proposals.index(proposal) / (len(node.proposals) + 1)
+_ANSWER_IN_THOUGHT = re.compile(r"<answer>\s*(.*?)\s*</answer>", re.S)
 
 
-def pick_next(root: Node, score: Score = depth_first, skip: frozenset[int] = frozenset()) -> Optional[tuple[Node, Proposal]]:
-    """Unexplored (node, proposal) with the highest score. `skip` holds id()s of
-    proposals to leave out (e.g. ones whose call failed)."""
-    candidates = [(n, p) for n, p in root.unexplored() if id(p) not in skip]
-    if not candidates:
+def answer_of(node: Optional[Node]) -> Optional[str]:
+    """The <answer> of an answer node (kept at the end of its thought), else None."""
+    if node is None or not node.is_answer:
         return None
-    return max(candidates, key=lambda np: score(*np))
+    found = _ANSWER_IN_THOUGHT.findall(node.thought or "")
+    return found[-1] if found else None
 
 
-@dataclass
-class SearchResult:
-    answer: Optional[Node]
-    calls: int
-    errors: list[str]
+def continue_from(node: Node, proposal: Proposal | str, model: PrefillLLM) -> Optional[str]:
+    """answer = g(partial chain, question): one call that develops `proposal` of
+    `node`. The partial chain is the path from the question down to `node`, plus
+    the chosen proposal; the question is the tree's root.
+
+    The new nodes (and their <follow_proposal> log-probs) are added to the tree.
+    Returns the answer of the node the call ends on, or None if it stopped on
+    open proposals or the reply broke the format (its valid start is still kept;
+    an unreadable reply leaves the tree unchanged)."""
+    try:
+        created = expand_prefill(node, proposal, model)
+    except DecodeError:  # includes PartialChain
+        return None
+    return answer_of(created[-1])
 
 
-def search(
-    root: Node,
-    prefill: PrefillLLM,
-    max_calls: int = 10,
-    score: Score = depth_first,
-) -> SearchResult:
-    """Call the model until a node gives the answer or the call budget runs out.
-
-    `prefill(system, user, prefix)` is a chat model with assistant prefill
-    (see expand_prefill).
-
-    Each call starts from the unexplored proposal with the highest `score`
-    (the question on the first call). The default is DFS backtracking; pass a
-    score built from log-probs or a critic to change the order. A proposal whose
-    call fails to decode is not retried. When only the start of a reply is
-    valid, that start is kept and the error is recorded.
-    """
-    errors: list[str] = []
-    failed: set[int] = set()
-    calls = 0
-    while calls < max_calls:
-        if root.answer_nodes():
-            break
-        nxt = pick_next(root, score, frozenset(failed))
-        if nxt is None:
-            break
-        calls += 1
-        try:
-            expand_prefill(*nxt, prefill)
-        except PartialChain as e:
-            errors.append(f"{nxt[1].title!r}: {e}")
-        except DecodeError as e:
-            failed.add(id(nxt[1]))
-            errors.append(f"{nxt[1].title!r}: {e}")
-    answers = root.answer_nodes()
-    return SearchResult(answers[0] if answers else None, calls, errors)
+def generate(question: str, model: PrefillLLM) -> tuple[Optional[str], Node]:
+    """(answer, chain) = f(question): one call from the question. Returns the
+    answer (None if none was reached) and the tree root holding the chain."""
+    root = Node.new_root(question)
+    return continue_from(root, root.proposals[0], model), root
