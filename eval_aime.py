@@ -269,8 +269,7 @@ def main() -> None:
     rows = load(args.limit)
     summaries = []
     if args.method in ("cot", "both"):
-        base = TinkerLLM.create(model=args.model, renderer_name="qwen3_5_disable_thinking",
-                                max_tokens=args.max_tokens, temperature=args.temperature)
+        base = TinkerLLM.create(model=args.model, max_tokens=args.max_tokens, temperature=args.temperature)
         res = evaluate("cot", lambda row: run_cot(base, row), rows, args.workers)
         summaries.append(summarize("cot", res))
     if args.method in ("tree", "both"):

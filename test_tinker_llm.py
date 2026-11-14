@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 
 from llm import expand_prefill, search
-from tinker_llm import TinkerCompleter, TinkerLLM, TinkerPrefill, _split_content
+from tinker_llm import TinkerLLM, TinkerPrefill, _text_content
 from tree import Node
 
 REPLY = "<node><thought>12*15 = 180</thought></node>"
@@ -20,7 +20,7 @@ class FakeFuture:
 
 
 class FakeRenderer:
-    """Stands in for the cookbook gpt-oss renderer: tokens are just a list of ints
+    """Stands in for a cookbook chat renderer: tokens are just a list of ints
     and parse_response returns pre-set content."""
 
     def __init__(self, content, clean=True):
@@ -55,7 +55,7 @@ class TestTinkerLLM(unittest.TestCase):
         renderer = FakeRenderer(content)
         return TinkerLLM(client, renderer, "PARAMS"), client, renderer
 
-    def test_returns_final_text_and_keeps_thinking(self):
+    def test_returns_text_parts_only(self):
         content = [{"type": "thinking", "thinking": "let me think"}, {"type": "text", "text": REPLY}]
         llm, client, renderer = self.make(content)
         self.assertEqual(llm("SYS", "PROMPT"), REPLY)
@@ -64,50 +64,18 @@ class TestTinkerLLM(unittest.TestCase):
             {"role": "user", "content": "PROMPT"},
         ])
         self.assertEqual(client.calls, [("MODEL_INPUT", 1, "PARAMS")])
-        self.assertEqual(llm.last.thinking, "let me think")
         self.assertEqual(llm.last.tokens, [1, 2, 3])
         self.assertEqual(llm.last.logprobs, [-0.1, -0.2, -0.3])
         self.assertTrue(llm.last.clean)
-
-    def test_prompt_kwargs_passed_to_renderer(self):
-        client, renderer = FakeSamplingClient(), FakeRenderer(REPLY)
-        llm = TinkerLLM(client, renderer, "PARAMS", {"effort": 0.0})
-        llm("s", "p")
-        self.assertEqual(renderer.kwargs, {"effort": 0.0})
-
-    def test_continue_mode_search(self):
-        llm, _, renderer = self.make([{"type": "text", "text": "  <thought>12*15 = 180</thought>\n</node>"}])
-        result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=3, mode="continue")
-        self.assertEqual(result.answer.thought, "12*15 = 180")
-        self.assertIn("<trace>", renderer.messages[1]["content"])
 
     def test_plain_string_content_and_non_future(self):
         llm, _, _ = self.make(REPLY, future=False)
         self.assertEqual(llm("s", "p"), REPLY)
 
-    def test_split_content(self):
-        self.assertEqual(_split_content("x"), ("x", ""))
+    def test_text_content(self):
+        self.assertEqual(_text_content("x"), "x")
         parts = [{"type": "text", "text": "a"}, {"type": "thinking", "thinking": "t"}, {"type": "text", "text": "b"}]
-        self.assertEqual(_split_content(parts), ("ab", "t"))
-
-    def test_plugs_into_search(self):
-        llm, _, _ = self.make([{"type": "text", "text": REPLY}])
-        result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=3)
-        self.assertEqual(result.answer.thought, "12*15 = 180")
-
-
-class FakeTokenizer:
-    def decode(self, tokens):
-        return "decoded:" + ",".join(map(str, tokens))
-
-
-class TestTinkerCompleter(unittest.TestCase):
-    def test_sample_decodes_and_keeps_logprobs(self):
-        client = FakeSamplingClient()
-        completer = TinkerCompleter(client, FakeTokenizer(), "PARAMS")
-        self.assertEqual(completer._sample("MODEL_INPUT"), "decoded:1,2,3")
-        self.assertEqual(client.calls, [("MODEL_INPUT", 1, "PARAMS")])
-        self.assertEqual(completer.last.logprobs, [-0.1, -0.2, -0.3])
+        self.assertEqual(_text_content(parts), "ab")
 
 
 class FakeModelInput:

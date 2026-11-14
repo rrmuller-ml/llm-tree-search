@@ -45,7 +45,7 @@ uv run python run_search.py --load runs/17x23.yaml \
 ```
 
 This runs `Qwen/Qwen3.6-35B-A3B` on Tinker with thinking off and assistant
-prefill ([details](#qwen36-35b-a3b-with-assistant-prefill)), prints the tree
+prefill ([details](#assistant-prefill)), prints the tree
 and saves it as YAML. To view it, serve the repo and open the file in the UI:
 
 ```bash
@@ -65,14 +65,8 @@ Saved runs, both from these commands:
   The model's thought switches back to difference of squares instead of
   following the proposal's title, so the branch repeats the same method.
 
-`run_search.py` options: `--max-calls N`, `--model NAME`, and `--mode`:
-
-| `--mode` | Model | How a proposal is developed |
-| --- | --- | --- |
-| `prefill` (default) | `Qwen/Qwen3.6-35B-A3B` | Assistant reply pre-started with the cut trace |
-| `inkling` | `thinkingmachines/Inkling-Small` | Cut trace in the user message ([continue mode](#inkling-small-continue-mode)) |
-| `gpt-oss` | `openai/gpt-oss-120b` | Path + `<develop>` in the user message |
-
+`run_search.py` options: `--max-calls N` and `--model NAME` (default
+`Qwen/Qwen3.6-35B-A3B`, with [assistant prefill](#assistant-prefill)).
 Each call costs Tinker credits; `--max-calls` caps them.
 
 ## Files
@@ -81,11 +75,12 @@ Each call costs Tinker credits; `--max-calls` caps them.
 | --- | --- |
 | [`tree.py`](tree.py) | `Node` and `Proposal` classes |
 | [`llm.py`](llm.py) | XML codec for LLM output, plus `expand` and `search` |
-| [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (Qwen), `TinkerLLM` (gpt-oss, Inkling), `TinkerCompleter` (base models) |
+| [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (assistant prefill), `TinkerLLM` (plain chat, used by the CoT baseline) |
 | [`run_search.py`](run_search.py) | Command line: run a search on Tinker and save the tree |
 | [`eval_aime.py`](eval_aime.py) | AIME 2024 + 2025 evaluation: CoT vs one tree chain, strict format scoring |
 | [`expand_aime.py`](expand_aime.py) | Grow saved AIME trees with more expansions and record every answer they reach |
-| [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME problems with answers |
+| [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME evaluation problems with answers |
+| [`build_dataset.py`](build_dataset.py), [`data/aime_1983_2023.jsonl`](data/aime_1983_2023.jsonl) | RL training set: 918 AIME problems from 1983-2023, no eval problems |
 | [`runs/`](runs/) | Saved search trees (17 * 23) and AIME results ([`runs/aime_eval/`](runs/aime_eval/)) |
 | [`serve.py`](serve.py) | Serves the repo for the viewer with caching turned off |
 | [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py), [`test_tinker_llm.py`](test_tinker_llm.py) | Unit tests (`unittest`), with fake models |
@@ -247,64 +242,20 @@ choice it writes, and an expansion fills the choice the code made. A choice
 nothing has followed yet (a reply that stopped on open proposals) has no
 `prob` until it is expanded. The UI shows `prob`; `logprob` is in the YAML.
 
-The prompt for each call (`encode_context`) holds the question, the path so
-far (each step's title and thought) and the proposal to develop:
+### Assistant prefill
+
+Every call uses **assistant prefill**: the assistant reply is pre-started with
+the trace, so choosing a proposal is just cutting the trace and setting
+`<follow_proposal>`, and the model continues its own reply (`prefill_parts`):
+
+- System message: `SYSTEM_PROMPT` (the format and the example).
+- User message: `<question>…</question>` and "Write the trace inside
+  `<trace> ... </trace>`."
+- Assistant prefill: `<trace>`, the question node, the path cut right after the
+  node that owns the proposal to explore, and an open node whose
+  `<follow_proposal>` picks that proposal:
 
 ```xml
-<question>What is 12 * 15?</question>
-<path>
-  <step title="What is 12 * 15?">Split into easier parts.</step>
-</path>
-<develop>Double and halve: 6*30</develop>
-```
-
-### Running a search
-
-The LLM is any function `llm(system, prompt) -> str`:
-
-```python
-from llm import search
-from tree import Node
-
-def llm(system: str, prompt: str) -> str:
-    ...  # call your model (gpt-oss, Claude, a local model, ...) and return its text
-
-root = Node.new_root("What is 12 * 15?")
-result = search(root, llm, max_calls=10)
-print(result.answer.thought if result.answer else "no answer", result.calls, result.errors)
-```
-
-`search` repeats until a node gives the answer or `max_calls` runs out:
-
-1. Pick the unexplored proposal with the highest `score(node, proposal)`.
-   The first call picks the question.
-2. Ask the LLM to develop it (`expand`) and add the chain to the tree.
-
-The default score, `depth_first`, takes the deepest open proposal, which is
-plain DFS backtracking. Once log-probs or a critic are available, pass your
-own, e.g. `score=lambda node, p: p.prob or 0.0`. A proposal whose call fails to
-decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
-
-| Function | Purpose |
-| --- | --- |
-| `SYSTEM_PROMPT` | Explains the format to the model |
-| `encode_context(node, proposal)` | Prompt for one call |
-| `decode_chain(text)` / `encode_chain(chain)` | XML text ⇄ list of `NodeSpec` |
-| `validate_chain(chain)` | Check the rules |
-| `apply_chain(node, proposal, chain)` | Add the chain to the tree |
-| `expand(node, proposal, llm)` | One call: encode, call, decode, apply |
-| `pick_next(root, score)` / `depth_first` | Choose the next proposal |
-| `search(root, llm, max_calls, score)` | The full loop |
-
-### Completion (autocomplete) mode
-
-Instead of a chat call, a completion model can continue a text document. The
-document is a short header with one solved example, the question, and the
-trace so far, cut right after the node that owns the proposal to explore, with
-an open node whose `<follow_proposal>` picks that proposal:
-
-```xml
-<question>What is 12 * 15?</question>
 <trace>
 <node>
   <follow_proposal idx=""/>
@@ -326,19 +277,48 @@ The model writes the rest of that node (and possibly more nodes). Text after
 every proposal of each node on the path is still listed, so `idx` values stay
 the same as in the tree.
 
+### Running a search
+
+The model is any function `prefill(system, user, prefix)` that returns the
+continuation (a `str`, or an `llm.Reply` with log-probs):
+
 ```python
-result = search(root, complete=my_complete)  # my_complete(prefix: str) -> str
+from llm import search
+from tinker_llm import TinkerPrefill
+from tree import Node
+
+prefill = TinkerPrefill.create()  # Qwen/Qwen3.6-35B-A3B, thinking off
+root = Node.new_root("What is 12 * 15?")
+result = search(root, prefill, max_calls=10)
+print(result.answer.thought if result.answer else "no answer", result.calls, result.errors)
 ```
+
+`search` repeats until a node gives the answer or `max_calls` runs out:
+
+1. Pick the unexplored proposal with the highest `score(node, proposal)`.
+   The first call picks the question.
+2. Ask the model to develop it (`expand_prefill`) and add the chain to the tree.
+
+The default score, `depth_first`, takes the deepest open proposal, which is
+plain DFS backtracking. Once log-probs or a critic are available, pass your
+own, e.g. `score=lambda node, p: p.prob or 0.0`. A proposal whose call fails to
+decode is not retried. Save the tree with `root.to_dict()` to view it in the UI.
 
 | Function | Purpose |
 | --- | --- |
+| `SYSTEM_PROMPT` | Explains the format to the model |
+| `prefill_parts(node, proposal)` | User message, assistant prefill and open node for one call |
 | `encode_trace(node)` | Path down to `node` as XML nodes |
-| `completion_prefix(node, proposal)` | Document to continue, and its open node |
-| `expand_completion(node, proposal, complete)` | One completion call |
+| `decode_chain(text)` / `encode_chain(chain)` | XML text ⇄ list of `NodeSpec` |
+| `validate_chain(chain)` | Check the rules |
+| `apply_chain(node, proposal, chain)` | Add the chain to the tree |
+| `expand_prefill(node, proposal, prefill)` | One call: build the prefill, call, decode, apply |
+| `pick_next(root, score)` / `depth_first` | Choose the next proposal |
+| `search(root, prefill, max_calls, score)` | The full loop |
 
-### gpt-oss-120b on Tinker
+### Qwen3.6-35B-A3B on Tinker
 
-[`tinker_llm.py`](tinker_llm.py) runs `openai/gpt-oss-120b` through
+[`tinker_llm.py`](tinker_llm.py) runs models through
 [Tinker](https://tinker-docs.thinkingmachines.ai/). Install and log in:
 
 ```bash
@@ -349,81 +329,19 @@ uv add tinker tinker-cookbook
 uv run tinker auth login
 ```
 
-(or set `TINKER_API_KEY`). Then:
+(or set `TINKER_API_KEY`).
 
-```python
-from llm import search
-from tinker_llm import TinkerLLM
-from tree import Node
-
-llm = TinkerLLM.create()  # openai/gpt-oss-120b, renderer gpt_oss_medium_reasoning
-result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10)
-```
-
-- The prompt is rendered with the cookbook's gpt-oss renderer (harmony format).
-  `SYSTEM_PROMPT` becomes the developer instructions.
-- gpt-oss reasons in its analysis channel first; only the final channel is
-  returned to `llm.py`. Reasoning tokens count toward `max_tokens` (default 16384).
-- `llm.last` keeps the last call's final text, thinking, sampled tokens,
-  per-token log-probs and whether it ended cleanly.
-- Options: `TinkerLLM.create(model=..., renderer_name="gpt_oss_low_reasoning" | "gpt_oss_high_reasoning", max_tokens=..., temperature=..., model_path=...)`.
-  `model_path` samples from your own saved weights instead of the base model.
-- `TinkerCompleter.create()` is the completion-mode adapter: plain text in and
-  out, no chat template, default model `Qwen/Qwen3.5-35B-A3B-Base`, stops at
-  `</trace>`. Use it as `search(root, complete=TinkerCompleter.create())`.
-
-### Qwen3.6-35B-A3B with assistant prefill
-
-The cleanest way to run the cut-trace workflow on a chat model: the assistant
-reply is **pre-started** with the trace, so choosing a proposal is just cutting
-the trace and setting `<follow_proposal>`, and the model continues its own reply.
-
-```python
-from llm import search
-from tinker_llm import TinkerPrefill
-from tree import Node
-
-prefill = TinkerPrefill.create()  # Qwen/Qwen3.6-35B-A3B, renderer qwen3_5_disable_thinking
-result = search(Node.new_root("What is 12 * 15?"), prefill=prefill, max_calls=10)
-```
-
-- System message: `SYSTEM_PROMPT`. User message: the question. Assistant
-  prefill: `<trace>`, the trace cut after the node that owns the proposal,
-  and an open `<node><follow_proposal idx="k"/>` (`prefill_parts`).
-- The `qwen3_5_disable_thinking` renderer opens the assistant turn with an
-  empty, closed `<think></think>` block, so the model answers without hidden
-  reasoning; the reasoning lives in each `<thought>`.
-- The prefill is added with the cookbook's `build_generation_prompt(..., prefill=...)`.
-- `prefill.last` holds only the sampled continuation: its text, tokens and
-  per-token log-probs, so the log-prob of each `<follow_proposal>` the model writes can
-  become that proposal's `prob`.
+- `TinkerPrefill.create()` is the model for `search`: `Qwen/Qwen3.6-35B-A3B`
+  with the `qwen3_5_disable_thinking` renderer, which opens the assistant turn
+  with an empty, closed `<think></think>` block, so the model answers without
+  hidden reasoning; the reasoning lives in each `<thought>`. The prefill is
+  added with the cookbook's `build_generation_prompt(..., prefill=...)`.
 - Other Qwen hybrids work the same way: `TinkerPrefill.create(model="Qwen/Qwen3.5-397B-A17B")`.
-
-### Inkling-Small, continue mode
-
-`thinkingmachines/Inkling-Small` can't continue a partially written reply (its
-renderer rejects a prefill), so the cut trace goes in the **user message**
-instead, and the reply is the continuation (`mode="continue"`):
-
-```python
-from llm import search
-from tinker_llm import TinkerLLM
-from tree import Node
-
-llm = TinkerLLM.inkling()  # Inkling-Small, renderer tml_v0, effort=0.0
-result = search(Node.new_root("What is 12 * 15?"), llm, max_calls=10, mode="continue")
-```
-
-- The user message is `CONTINUE_INSTRUCTION` followed by the question and the
-  trace cut after the node that owns the proposal, ending in an open
-  `<node><follow_proposal idx="k"/>`. `SYSTEM_PROMPT` (with the example) stays the
-  system message.
-- The reply may continue inside the open node or rewrite it from `<node>`; a
-  rewritten node must keep the chosen `<follow_proposal>`.
-- `effort` is Inkling's thinking-effort control in [0, 1). `0.0` steers it
-  toward no reasoning but doesn't forbid it; any reasoning it does write is
-  kept in `llm.last.thinking`, not in the tree.
-- Continue mode works with any chat model: `search(root, llm, mode="continue")`.
+- `TinkerLLM.create()` is a plain chat call, `llm(system, prompt) -> str`, used
+  only by the CoT baseline of the AIME evaluation.
+- Each adapter keeps its last call in `.last` (text, tokens, per-token
+  log-probs, whether it ended cleanly). `model_path=` samples from your own
+  saved weights instead of the base model.
 
 ## AIME evaluation
 

@@ -44,13 +44,10 @@ log-prob of the LLM writing that <follow_proposal>, and its `value` from a train
 critic; both are left unset here. `search` takes a `score` function so either
 can be plugged in later.
 
-Two ways to call a model, both using the same format:
-- chat: `llm(system, prompt) -> str` gets the instructions and the path so far
-  and writes new nodes (`expand`).
-- completion: `complete(prefix) -> str` continues a text document. The prefix
-  is the trace so far, cut after the node that owns the proposal to explore,
-  plus an open `<node><follow_proposal idx="k"/>` choosing that proposal; the model
-  writes the rest (`expand_completion`). Suits base / autocomplete models.
+The model is called with assistant prefill: `prefill(system, user, prefix)`
+continues a reply that is pre-started with the trace so far, cut after the node
+that owns the proposal to explore, plus an open `<node><follow_proposal idx="k"/>`
+choosing that proposal; the model writes the rest (`expand_prefill`).
 """
 
 from __future__ import annotations
@@ -59,12 +56,10 @@ import html
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Callable, Literal, Optional
+from typing import Callable, Optional
 
 from tree import Node, Proposal
 
-LLM = Callable[[str, str], str]  # (system, prompt) -> reply
-Complete = Callable[[str], str]  # prefix -> continuation
 PrefillLLM = Callable[[str, str, str], "str | Reply"]  # (system, user, assistant prefill) -> continuation
 Score = Callable[[Node, Proposal], float]
 
@@ -129,23 +124,6 @@ depth-first until a node gives the final answer. Write only <node> elements.
 Example for "{EXAMPLE_QUESTION}":
 {EXAMPLE_TRACE}
 """
-
-# Header of the completion-mode document: a short description and one solved
-# example, so a base model sees the pattern before the real question.
-COMPLETION_HEADER = f"""\
-Each problem below is solved with a depth-first trace of XML nodes. The first
-node has the question as its only proposal. A node has a <thought> and
-<proposal idx="i"> possible next steps. Every node after the first starts with
-<follow_proposal idx="i"/> to say which proposal of the node above it develops. A node
-with no proposals gives the final answer and ends the trace.
-
-<question>{EXAMPLE_QUESTION}</question>
-<trace>
-{EXAMPLE_TRACE}
-</trace>
-
-"""
-
 
 class DecodeError(ValueError):
     """The LLM output could not be decoded or breaks the chain rules."""
@@ -308,26 +286,6 @@ def encode_chain(chain: list[NodeSpec]) -> str:
     return "\n".join(out)
 
 
-def encode_context(node: Node, proposal: Proposal | str) -> str:
-    """Prompt for one call: the question, the path so far, and the proposal to develop."""
-    p = node._resolve(proposal)
-    lines = [f"<question>{_xml_text(node.question)}</question>"]
-    steps = [n for n in node.path() if not n.is_root]
-    if steps:
-        lines.append("<path>")
-        for n in steps:
-            title = html.escape(n.title or "", quote=True)
-            lines.append(f'  <step title="{title}">{_xml_text(n.thought or "")}</step>')
-        lines.append("</path>")
-    if node.is_root:
-        lines.append("Start reasoning about the question. Your first node has no <follow_proposal>.")
-    else:
-        lines.append(f"<develop>{_xml_text(p.title)}</develop>")
-        lines.append("Continue from the path by developing the step in <develop>. "
-                     "Your first node develops it and has no <follow_proposal>.")
-    return "\n".join(lines)
-
-
 def encode_trace(node: Node) -> str:
     """The path from the first node down to `node` as XML nodes. Each node lists
     all its proposals (idx = position), and <follow_proposal> links each to the previous;
@@ -342,44 +300,6 @@ def encode_trace(node: Node) -> str:
         for i, n in enumerate(steps)
     ]
     return encode_chain(chain)
-
-
-def _open_trace(node: Node, proposal: Proposal | str) -> tuple[str, str]:
-    """(question + trace cut after `node` + open node, opener). The trace starts
-    with the question node; the opener's <follow_proposal> picks `proposal` (0 when
-    developing the question)."""
-    p = node._resolve(proposal)
-    opener = f'<node>\n  <follow_proposal idx="{node.proposals.index(p)}"/>\n'
-    trace = question_node(node.question) + "\n" + (encode_trace(node) + "\n" if not node.is_root else "")
-    body = (
-        f"<question>{_xml_text(node.question)}</question>\n<trace>\n"
-        + trace
-        + opener
-    )
-    return body, opener
-
-
-def completion_prefix(node: Node, proposal: Proposal | str) -> tuple[str, str]:
-    """Document for a completion model, cut so the model's continuation develops
-    `proposal`. Returns (prefix, opener): opener is the open-node text at the end
-    of the prefix, which belongs to the first node the model writes."""
-    body, opener = _open_trace(node, proposal)
-    return COMPLETION_HEADER + body, opener
-
-
-CONTINUE_INSTRUCTION = """\
-The trace below is in progress. It stops inside an open <node> whose <follow_proposal>
-is already chosen. Continue it: write that node's <thought> and proposals,
-close it, and keep going depth-first until a node gives the final answer.
-Reply with only the continuation, starting with that node's <thought>."""
-
-
-def continue_prompt(node: Node, proposal: Proposal | str) -> tuple[str, str]:
-    """Chat-mode version of the cut trace, for models that can't continue a
-    partially written reply: the cut trace goes in the user message and the
-    model writes the continuation as its reply. Returns (prompt, opener)."""
-    body, opener = _open_trace(node, proposal)
-    return CONTINUE_INSTRUCTION + "\n\n" + body, opener
 
 
 def prefill_parts(node: Node, proposal: Proposal | str) -> tuple[str, str, str]:
@@ -510,25 +430,6 @@ def _apply_reply(
     return created
 
 
-def expand(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node]:
-    """One chat call: develop `proposal` with a depth-first chain of nodes."""
-    return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, encode_context(node, proposal)))
-
-
-def expand_completion(node: Node, proposal: Proposal | str, complete: Complete) -> list[Node]:
-    """One completion call: the model continues the trace from an open node whose
-    <follow_proposal> picks `proposal`. Anything after </trace> is ignored."""
-    prefix, opener = completion_prefix(node, proposal)
-    return _apply_reply(node, proposal, complete(prefix), opener)
-
-
-def expand_continue(node: Node, proposal: Proposal | str, llm: LLM) -> list[Node]:
-    """One chat call in continue mode: the cut trace is the user message and the
-    model's reply continues it (see continue_prompt)."""
-    prompt, opener = continue_prompt(node, proposal)
-    return _apply_reply(node, proposal, llm(SYSTEM_PROMPT, prompt), opener)
-
-
 def expand_prefill(node: Node, proposal: Proposal | str, llm: PrefillLLM) -> list[Node]:
     """One chat call with assistant prefill: the reply is pre-started with the cut
     trace and the model continues it (see prefill_parts). If the model returns a
@@ -561,22 +462,14 @@ class SearchResult:
 
 def search(
     root: Node,
-    llm: Optional[LLM] = None,
+    prefill: PrefillLLM,
     max_calls: int = 10,
     score: Score = depth_first,
-    *,
-    complete: Optional[Complete] = None,
-    prefill: Optional[PrefillLLM] = None,
-    mode: Literal["develop", "continue"] = "develop",
 ) -> SearchResult:
     """Call the model until a node gives the answer or the call budget runs out.
 
-    Pass one model: a chat `llm(system, prompt)`, a completion
-    `complete(prefix)`, or a chat model with assistant prefill
-    `prefill(system, user, prefill)`. With
-    `llm`, `mode` picks the prompt: "develop" (path + <develop>, see
-    encode_context) or "continue" (cut trace with an open node, see
-    continue_prompt).
+    `prefill(system, user, prefix)` is a chat model with assistant prefill
+    (see expand_prefill).
 
     Each call starts from the unexplored proposal with the highest `score`
     (the question on the first call). The default is DFS backtracking; pass a
@@ -584,8 +477,6 @@ def search(
     call fails to decode is not retried. When only the start of a reply is
     valid, that start is kept and the error is recorded.
     """
-    if sum(x is not None for x in (llm, complete, prefill)) != 1:
-        raise ValueError("Pass exactly one of llm=, complete= or prefill=.")
     errors: list[str] = []
     failed: set[int] = set()
     calls = 0
@@ -597,14 +488,7 @@ def search(
             break
         calls += 1
         try:
-            if llm is not None and mode == "continue":
-                expand_continue(*nxt, llm)
-            elif llm is not None:
-                expand(*nxt, llm)
-            elif complete is not None:
-                expand_completion(*nxt, complete)
-            else:
-                expand_prefill(*nxt, prefill)
+            expand_prefill(*nxt, prefill)
         except PartialChain as e:
             errors.append(f"{nxt[1].title!r}: {e}")
         except DecodeError as e:

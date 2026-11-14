@@ -19,7 +19,7 @@ from pathlib import Path
 
 import yaml
 
-from llm import DecodeError, PartialChain, expand, expand_continue, expand_prefill, search
+from llm import DecodeError, PartialChain, expand_prefill, search
 from tree import Node, Proposal
 
 
@@ -41,10 +41,7 @@ def main() -> None:
                     help="develop only this unexplored proposal (one call) instead of running a search")
     ap.add_argument("--out", default="runs/latest.yaml", help="where to save the tree (YAML)")
     ap.add_argument("--max-calls", type=int, default=5)
-    ap.add_argument("--mode", choices=["prefill", "inkling", "gpt-oss"], default="prefill",
-                    help="prefill: Qwen3.6-35B-A3B with assistant prefill; inkling: Inkling-Small in "
-                         "continue mode; gpt-oss: gpt-oss-120b in develop mode")
-    ap.add_argument("--model", help="override the model name for the chosen mode")
+    ap.add_argument("--model", help="Tinker model (default Qwen/Qwen3.6-35B-A3B, assistant prefill, thinking off)")
     args = ap.parse_args()
 
     if args.load:
@@ -55,29 +52,20 @@ def main() -> None:
         ap.error("give a question or --load")
     target = find_unexplored(root, args.expand) if args.expand else None
 
-    from tinker_llm import TinkerLLM, TinkerPrefill
+    from tinker_llm import TinkerPrefill
 
-    kw = {"model": args.model} if args.model else {}
-    if args.mode == "prefill":
-        model = TinkerPrefill.create(**kw)
-        run_one, run_all = expand_prefill, lambda: search(root, prefill=model, max_calls=args.max_calls)
-    elif args.mode == "inkling":
-        model = TinkerLLM.inkling(**kw)
-        run_one, run_all = expand_continue, lambda: search(root, model, max_calls=args.max_calls, mode="continue")
-    else:
-        model = TinkerLLM.create(**kw)
-        run_one, run_all = expand, lambda: search(root, model, max_calls=args.max_calls)
+    model = TinkerPrefill.create(**({"model": args.model} if args.model else {}))
 
     if target:
         try:
-            created = run_one(*target, model)
+            created = expand_prefill(*target, model)
             print(f"expanded {target[1].title!r}: {len(created)} new nodes")
         except PartialChain as e:
             print(f"expanded {target[1].title!r} partly: {e}")
         except DecodeError as e:
             print(f"could not expand {target[1].title!r}: {e}")
     else:
-        result = run_all()
+        result = search(root, prefill=model, max_calls=args.max_calls)
         print(f"calls: {result.calls}  errors: {result.errors or 'none'}")
 
     out = Path(args.out)
