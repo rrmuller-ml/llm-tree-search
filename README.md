@@ -78,12 +78,13 @@ model (default `Qwen/Qwen3.6-35B-A3B`, with [assistant prefill](#assistant-prefi
 | [`tinker_llm.py`](tinker_llm.py) | Tinker adapters: `TinkerPrefill` (assistant prefill), `TinkerLLM` (plain chat, used by the CoT baseline) |
 | [`run_search.py`](run_search.py) | Command line: generate or continue a chain on Tinker and save the tree |
 | [`eval_aime.py`](eval_aime.py) | AIME 2024 + 2025 evaluation: CoT vs one tree chain, strict format scoring |
+| [`rl_train.py`](rl_train.py) | RL on the tree format: GRPO-style policy gradient on LoRA weights, with periodic AIME eval |
 | [`expand_aime.py`](expand_aime.py) | Grow saved AIME trees with more expansions and record every answer they reach |
 | [`data/aime_2024_2025.jsonl`](data/aime_2024_2025.jsonl) | The 60 AIME evaluation problems with answers |
 | [`build_dataset.py`](build_dataset.py), [`data/aime_1983_2023.jsonl`](data/aime_1983_2023.jsonl) | RL training set: 918 AIME problems from 1983-2023, no eval problems |
 | [`runs/`](runs/) | Saved search trees (17 * 23) and AIME results ([`runs/aime_eval/`](runs/aime_eval/)) |
 | [`serve.py`](serve.py) | Serves the repo for the viewer with caching turned off |
-| [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py), [`test_tinker_llm.py`](test_tinker_llm.py) | Unit tests (`unittest`), with fake models |
+| [`test_tree.py`](test_tree.py), [`test_llm.py`](test_llm.py), [`test_tinker_llm.py`](test_tinker_llm.py), [`test_rl.py`](test_rl.py) | Unit tests (`unittest`), with fake models |
 | [`example.yaml`](example.yaml) | Example tree in `Node.to_dict()` format |
 | [`ui/`](ui/) | HTML viewer for trees ([README](ui/README.md)) |
 | [`pyproject.toml`](pyproject.toml), [`uv.lock`](uv.lock) | Dependencies (`uv`) |
@@ -444,10 +445,61 @@ expansions each (same model, temperature 0.7):
 Files: `runs/aime_eval/trees_expanded/<id>.yaml` (the grown trees) and
 `runs/aime_eval/expansions.jsonl` (answers, majority, and a log of each expansion).
 
+## RL training
+
+[`rl_train.py`](rl_train.py) trains LoRA weights of `Qwen/Qwen3.6-35B-A3B` on
+Tinker with a GRPO-style policy gradient, on the 918 training problems in
+[`data/aime_1983_2023.jsonl`](data/aime_1983_2023.jsonl) (built by
+[`build_dataset.py`](build_dataset.py) from
+[di-zhang-fdu/AIME_1983_2024](https://huggingface.co/datasets/di-zhang-fdu/AIME_1983_2024),
+without 2024 or anything matching an eval problem).
+
+```bash
+uv run python rl_train.py --name smoke --steps 2 --batch 2 --group 4 --eval-every 2 --eval-limit 10 --eval-samples 2
+uv run python rl_train.py --name run1 --batch 8 --group 8 --eval-every 10   # one epoch (114 steps)
+```
+
+Each step:
+
+1. **Rollouts**: `--batch` problems, `--group` samples each, from the current
+   weights. The prompt is the one `generate` builds.
+2. **Reward** = format + (format and correct): 0, 1 or 2. Format is the strict
+   tree check of the AIME evaluation; correct means its answer equals the gold one.
+3. **Advantage** = reward − group mean. Groups where every sample got the same
+   reward are skipped.
+4. **Update**: `importance_sampling` loss and an Adam step, learning rate
+   `--lr` 4e-5 (the cookbook's RL default), LoRA rank 32. The cookbook's
+   supervised rate (`get_lr`, 5e-4) collapsed the policy after a single step
+   in the first smoke run: the model stopped choosing `answer`.
+
+With `--train-tokens decisions` (default) only the **decision tokens** carry
+the advantage; every other token is context with advantage 0. A decision token
+is the one written right after:
+
+| Point | Choice |
+| --- | --- |
+| `<follow_proposal idx="` | Which proposal to develop (the digit) |
+| `</proposal>\n` | Another proposal (`' '`) or close the node (`'</'`) |
+| `</thought>\n  <` | `proposal` or `answer` |
+| `</node>\n` | Another node (`'<'`) or end the trace (`'</'`) |
+
+`--train-tokens all` trains every sampled token instead.
+
+Every `--eval-every` steps (and at the start and the end) the current weights
+are scored on the 60 eval problems, `--eval-samples` samples each, with the
+same strict check: the share of valid samples and of valid-and-correct ones.
+
+Output in `runs/rl/<name>/`: `metrics.jsonl` (per step: reward, valid and
+valid&correct rates, share of groups with signal, trained tokens, decision
+counts, timing, optimizer metrics), `eval.jsonl`, `samples.jsonl` (every
+rollout's text, reward and advantage), `config.json` and `checkpoints.jsonl`.
+A rerun with the same `--name` resumes from the last checkpoint; a saved
+sampler path loads with `TinkerPrefill.create(model_path=...)`.
+
 ## Tests
 
 ```bash
-python3 -m unittest -v test_tree test_llm test_tinker_llm
+python3 -m unittest -v test_tree test_llm test_tinker_llm test_rl
 ```
 
 The `example.yaml` tests are skipped if PyYAML is not installed.
