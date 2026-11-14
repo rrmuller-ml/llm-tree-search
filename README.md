@@ -447,6 +447,8 @@ Files: `runs/aime_eval/trees_expanded/<id>.yaml` (the grown trees) and
 
 ## RL training
 
+Experiments and learnings are in the [RL training log book](runs/rl/README.md).
+
 [`rl_train.py`](rl_train.py) trains LoRA weights of `Qwen/Qwen3.6-35B-A3B` on
 Tinker with a GRPO-style policy gradient, on the 918 training problems in
 [`data/aime_1983_2023.jsonl`](data/aime_1983_2023.jsonl) (built by

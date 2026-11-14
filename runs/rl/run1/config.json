@@ -1,0 +1,18 @@
+{
+  "name": "run1",
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "steps": 114,
+  "batch": 8,
+  "group": 8,
+  "max_tokens": 16384,
+  "temperature": 1.0,
+  "lr": 4e-05,
+  "lora_rank": 32,
+  "train_tokens": "decisions",
+  "eval_every": 10,
+  "eval_samples": 4,
+  "eval_limit": null,
+  "eval_temperature": 0.7,
+  "save_every": 10,
+  "seed": 0
+}
